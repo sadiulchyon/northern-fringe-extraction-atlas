@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northern Fringe Extraction Atlas</title>
+<meta name="description" content="Sand and gravel extraction along the northern border of Bangladesh, 1988 to 2025, from one January Landsat scene per dry season at 99 river sites.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script src="vendor/d3.min.js"></script>
+<style>
+:root {
+  --font-anthropic-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-anthropic-serif: "Source Serif 4", Georgia, serif;
+  --color-bg: #f7f6f3; --color-panel: #ffffff; --color-fg: #1f1f1d; --color-fg-muted: #6b6a66; --color-border-line: #e3e1db;
+  --color-ok: #4d9221; --color-warn: #2166ac; --color-bad: #b2182b;
+  --cds-chart-status-critical: #b2182b; --cds-chart-muted: #a8a6a0; --cds-chart-grid: #efeee9; --cds-chart-axis: #c9c7c0; --cds-chart-reference: #9a978f;
+  --cds-surface-popover: #ffffff; --cds-border: #dcdad3; --cds-shadow-popover: 0 6px 24px rgba(0,0,0,.12); --cds-text-secondary: #6b6a66;
+  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px;
+  --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 18px;
+  --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 17px; --cds-font-size-title: 30px;
+  --cds-font-weight-medium: 600; --cds-radius: 8px; --cds-dur-slow: .3s;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #171716; --color-panel: #201f1d; --color-fg: #ecebe6; --color-fg-muted: #a3a19a; --color-border-line: #34332f;
+    --color-ok: #7fbf55; --color-warn: #5b9bd5; --color-bad: #e0606a;
+    --cds-chart-status-critical: #e0606a; --cds-chart-muted: #6d6b65; --cds-chart-grid: #2a2926; --cds-chart-axis: #4a4843; --cds-chart-reference: #7d7a72;
+    --cds-surface-popover: #262522; --cds-border: #3a3935; --cds-shadow-popover: 0 6px 24px rgba(0,0,0,.5); --cds-text-secondary: #a3a19a;
+  }
+}
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); line-height: 1.45; }
+#dash-root { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+.dash-skeleton { min-height: 1.2em; }
+.nf-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-md); display: grid; gap: 6px; }
+.nf-foot a { color: inherit; }
+</style>
+<script>
+/* Standalone data layer: loads the CSV/JSON files in data/ and offers the small API the atlas page uses
+   (dash.data, dash.calc, dash.onData, dash.colors). No server or Claude account is needed. */
+(function () {
+  const FILES = {
+    inventory: ['data/inventory.csv', 'csv'], sites: ['data/sites.csv', 'csv'], site_results: ['data/site_results.csv', 'csv'],
+    onset: ['data/onset.csv', 'csv'], series: ['data/series.csv', 'csv'], chips: ['data/chips.json', 'json'],
+    screening: ['data/screening.csv', 'csv'], events: ['data/events.csv', 'csv'], countries: ['data/countries.json', 'json'],
+    rivers: ['data/rivers.json', 'json'], labels: ['data/labels.csv', 'csv']
+  };
+  const store = {}, calcs = {}, memo = {}, cbs = [];
+  const calcData = (id) => {
+    if (memo[id]) return memo[id];
+    const spec = calcs[id], ins = spec.inputs.map((i) => window.dash.data(i));
+    if (ins.some((x) => x.status === 'error')) return { status: 'error', data: [] };
+    if (ins.some((x) => x.status !== 'ok')) return { status: 'loading', data: [] };
+    let out;
+    try { const v = spec.fn(...ins.map((x) => x.data)); out = { status: 'ok', data: v, columns: Array.isArray(v) && v[0] ? Object.keys(v[0]) : [] }; }
+    catch (e) { console.error('calc ' + id, e); out = { status: 'error', data: [], message: String(e) }; }
+    return (memo[id] = out);
+  };
+  window.dash = {
+    colors: ['#2b6cb0', '#c9a227', '#4d9221', '#b2182b', '#762a83', '#e08214', '#1b9e77', '#7a7770'],
+    data(id) { if (calcs[id]) return calcData(id); return store[id] || { status: FILES[id] ? 'loading' : 'missing', data: [], columns: [] }; },
+    calc(id, spec) { calcs[id] = spec; },
+    onData(fn) { cbs.push(fn); try { fn(); } catch (e) { console.error(e); } },
+    params() { return {}; }, setParams() {}, resetParams() {}, setLink() {}, refresh() {}, loader() {}
+  };
+  const fire = () => { Object.keys(memo).forEach((k) => delete memo[k]); cbs.forEach((f) => { try { f(); } catch (e) { console.error(e); } }); };
+  let left = Object.keys(FILES).length;
+  Object.entries(FILES).forEach(([id, [url, kind]]) => {
+    fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return kind === 'csv' ? r.text() : r.json(); })
+      .then((v) => { if (kind === 'csv') { const rows = d3.csvParse(v); store[id] = { status: 'ok', data: rows, columns: rows.columns }; } else store[id] = { status: 'ok', data: v, columns: Object.keys(v[0] || {}) }; })
+      .catch((e) => { console.error(e); store[id] = { status: 'error', data: [], message: String(e) }; })
+      .finally(() => { left -= 1; if (left === 0 || ['site_results', 'sites', 'onset', 'inventory'].includes(id)) fire(); });
+  });
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(fire, 200); });
+})();
+</script>
+</head>
+<body>
+<div id="dash-root">
+<style>
+.nf { --nf-sea: color-mix(in srgb, #4a90c8 10%, var(--color-panel)); --nf-land: var(--color-panel); --nf-land-bd: color-mix(in srgb, var(--color-fg) 6%, var(--color-panel)); --nf-river: #4f8fc9; --nf-fpit: #9b4fb8; --nf-river-text: #3a78b3; display: grid; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); }
+.nf-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.nf-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); max-width: 70ch; }
+.nf-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--cds-gap-md); }
+.nf-tile, .nf-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.nf-tile .lab { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.nf-tile .num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; }
+.nf-tile .sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.nf-card h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.nf-card .note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-sm); }
+.nf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-md); }
+.nf-box { position: relative; }
+.nf-map { min-height: 420px; }
+.nf-tlmap { min-height: 260px; }
+.nf-tlcum { min-height: 110px; }
+.nf-tlctl input[type=range] { flex: 1 1 10rem; max-width: 28rem; accent-color: var(--color-fg); }
+.nf-tlyear { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); font-variant-numeric: tabular-nums; min-width: 3.2em; }
+.nf-tlmk { cursor: pointer; }
+.nf-tlmk:focus-visible { outline: none; stroke: var(--color-fg); stroke-width: 3; }
+.nf-chart { min-height: 300px; }
+.nf-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); margin-bottom: var(--cds-gap-sm); }
+.nf-legend button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--color-fg); }
+.nf-legend button[aria-pressed="false"] { opacity: .35; }
+.nf-legend button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; border-radius: 3px; }
+.nf-sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.nf-sq { width: 12px; height: 8px; border: 2px solid; border-radius: 2px; display: inline-block; box-sizing: border-box; }
+.nf-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); max-width: 260px; z-index: 5; }
+.nf-tip .t { color: var(--cds-text-secondary); }
+.nf-ctl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; font-size: var(--cds-font-size-caption); }
+.nf-ctl select { font: inherit; padding: 2px 6px; }
+.nf-btn { font: inherit; font-size: var(--cds-font-size-caption); padding: 3px 10px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-panel); color: var(--color-fg); cursor: pointer; margin-bottom: var(--cds-gap-sm); }
+.nf-pop { position: absolute; top: 8px; right: 8px; width: min(560px, calc(100% - 16px)); max-height: calc(100% - 16px); overflow: auto; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-md); font-size: var(--cds-font-size-caption); z-index: 6; display: grid; gap: var(--cds-gap-xs); }
+.nf-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+@media (max-width: 520px) { .nf-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nf-chip { display: grid; gap: 3px; min-width: 0; }
+.nf-chip img { width: 100%; height: auto; image-rendering: pixelated; border-radius: 3px; border: 1px solid var(--color-border-line); background: #fff; display: block; }
+.nf-chip .cap { font-variant-numeric: tabular-nums; }
+.nf-chip .cap b { font-weight: 600; }
+.nf-chip .cap span { color: var(--color-fg-muted); }
+.nf-clsleg { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--color-fg-muted); }
+.nf-clsleg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; border: 1px solid var(--color-border-line); }
+.nf-sub { font-weight: var(--cds-font-weight-medium); margin-top: 6px; }
+.nf-events { margin: var(--cds-gap-sm) 0 0; padding-left: 1.4em; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: grid; gap: 2px; }
+.nf-events a { color: inherit; }
+.nf-ctl input[type=search] { font: inherit; padding: 2px 6px; min-width: 0; flex: 1 1 12rem; max-width: 20rem; }
+.nf-pop h3 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); }
+.nf-pop .row { display: flex; justify-content: space-between; gap: var(--cds-gap-sm); border-bottom: 1px solid var(--color-border-line); padding: 3px 0; }
+.nf-pop .row span:first-child { color: var(--color-fg-muted); }
+.nf-pop .row span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.nf-pop .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--color-fg-muted); font-size: 18px; cursor: pointer; line-height: 1; }
+.nf-pop .txt { color: var(--color-fg); line-height: 1.45; margin: 4px 0; }
+.nf-mk:focus-visible { outline: none; stroke: var(--color-fg); stroke-width: 3; }
+.nf-btn:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; }
+.nf-sitenote { font-size: var(--cds-font-size-body); margin: var(--cds-gap-sm) 0; max-width: 70ch; }
+.nf-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); border: 1px solid currentColor; }
+.nf-tablebox { max-height: 460px; overflow: auto; }
+.nf-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.nf-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.nf-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.nf-table tr[data-key] { cursor: pointer; }
+.nf-table tr[data-key]:hover td { background: var(--cds-chart-grid); }
+.nf-table td.n { text-align: right; }
+.nf .axis text { fill: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.nf .axis path, .nf .axis line { stroke: var(--cds-chart-axis); }
+.nf .grid line { stroke: var(--cds-chart-grid); }
+.nf .grid path { display: none; }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+[data-dash-source-state=empty] { color: transparent; }
+@media (max-width: 600px) { .nf-table .hide-n { display: none; } }
+</style>
+
+<div class="nf">
+  <header class="nf-head" id="top">
+    <h1>Northern Fringe Extraction Atlas</h1>
+    <p id="takeaway" data-source="summary" data-field="takeaway" class="dash-skeleton">—</p>
+  </header>
+
+  <section class="nf-tiles" id="tiles">
+    <div class="nf-tile"><div class="lab">Inventory points</div><div class="num" data-source="summary" data-field="points">—</div><div class="sub">mapped on Google Earth imagery, 2011–2022</div></div>
+    <div class="nf-tile"><div class="lab">Extraction sites</div><div class="num" data-source="summary" data-field="sites">—</div><div class="sub">extraction records clustered at 2 km</div></div>
+    <div class="nf-tile"><div class="lab">Sites analysed</div><div class="num" data-source="summary" data-field="analysed">—</div><div class="sub">January low-flow Landsat, 1988–2025</div></div>
+    <div class="nf-tile"><div class="lab">Pit extraction dated</div><!-- in-channel and floodplain pits --><div class="num" data-source="summary" data-field="pit">—</div><div class="sub">in-channel pits and floodplain pit fields</div></div>
+  </section>
+
+  <section class="nf-card" id="map-card">
+    <h2>Inventory and sites on the Bangladesh map</h2>
+    <div class="note">Points are the 411 inventory records; boxes are the 83 site windows, outlined by their low-flow result. Rivers are HydroRIVERS reaches with mean flow of 150 m³/s or more, drawn wider for larger rivers; borders are Natural Earth. The map opens on the northern border belt: scroll or pinch to zoom, drag to pan, click a box to open that site below.</div>
+    <div class="nf-legend" id="legend-groups" data-source="inventory"></div>
+    <div class="nf-legend" id="legend-types" data-source="site_results"></div>
+    <div class="nf-ctl"><button type="button" id="map-reset" class="nf-btn">Show all of Bangladesh</button></div>
+    <div class="nf-box nf-map dash-skeleton" id="map" data-source="inventory sites site_results countries rivers labels site_table series chips screening"></div>
+  </section>
+
+  <section class="nf-card" id="timeline-card">
+    <h2>Where extraction had begun, year by year</h2>
+    <div class="note">Drag the slider or press Play. A site lights up in its result colour from the first January in which the low-flow series shows an extraction-type change (pits, floodplain pits, possible dredging or bar loss); sites that changed within the two seasons before the chosen year carry a dark ring. Hollow markers are dated sites that have not yet changed; faint dots are sites with no dated extraction signal. Bar-vegetation sites (char cropping) are not extraction and stay faint. Click a lit site to open its series below.</div>
+    <div class="nf-ctl nf-tlctl">
+      <button type="button" id="tl-play" class="nf-btn" aria-label="Play through the years">Play</button>
+      <label for="tl-year">Season</label>
+      <input id="tl-year" type="range" min="1988" max="2025" step="1" value="2025" aria-label="Dry season">
+      <output id="tl-out" for="tl-year" class="nf-tlyear">2025</output>
+    </div>
+    <p class="nf-sitenote" id="tl-read">—</p>
+    <div class="nf-box nf-tlmap dash-skeleton" id="tlmap" data-source="onset_map countries rivers events"></div>
+    <div class="nf-box nf-tlcum" id="tlcum" data-source="onset_map events"></div>
+  </section>
+
+  <section class="nf-card" id="onset-card">
+    <h2>When change shows up, by position along the border</h2>
+    <div class="note">Analysed sites from west (top) to east (bottom), coloured by result. Bars span the visual onset read from the January panels; dots mark the statistical break in low-flow water area (Pettitt test, filled when p &lt; 0.05). Dashed lines are dated laws, bans and dredging works, numbered as in the list below the chart.</div>
+    <div class="nf-ctl"><label for="onset-filter">Show</label><select id="onset-filter"><option value="change">Sites with extraction signals</option><option value="all">All analysed sites</option></select></div>
+    <div class="nf-box nf-chart dash-skeleton" id="onset" data-source="site_table events"></div>
+    <ol class="nf-events" id="events-list" data-source="events"></ol>
+  </section>
+
+  <section class="nf-card" id="spread-card">
+    <h2>Which way the extraction spread</h2>
+    <div class="note">First year of change at each site with an extraction signal, plotted against its position along the border (west to east). Larger dots are pit extraction (in the channel or as floodplain pit fields). Dashed lines mark the 2010 Sand and Soil Management Act and the 2014 ban on mechanical quarrying in Sylhet. The table gives the median first year per sector.</div>
+    <div class="nf-legend" id="legend-spread"></div>
+    <div class="nf-box nf-chart dash-skeleton" id="spread" data-source="spread"></div>
+    <div class="nf-tablebox" style="max-height:none;margin-top:var(--cds-gap-sm)">
+      <table class="nf-table" id="spread-table" data-source="spread_sector" data-row-key="sector">
+        <thead><tr><th data-field="sector">Sector</th><th data-field="n">Dated sites</th><th data-field="median">Median first year</th><th data-field="pit_first">Earliest pit</th><th data-field="pit_last">Latest pit</th><th data-field="pits">Pit sites (first year)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="nf-grid">
+    <section class="nf-card" id="class-card">
+      <h2>What the sites show, by sector</h2>
+      <div class="note">All 83 inventory site windows plus the added N reaches, west (S1) to east (S6): result of the low-flow analysis, or skipped at screening because the channel is too narrow, braided or deep for 30 m Landsat.</div>
+      <div class="nf-legend" id="legend-class"></div>
+      <div class="nf-box nf-chart dash-skeleton" id="classes" data-source="class_by_sector"></div>
+    </section>
+    <section class="nf-card" id="sector-card">
+      <h2>What the inventory records, by sector</h2>
+      <div class="note">Count of inventory points per sector (S1 Panchagarh in the west to S6 Sylhet in the east), split by label.</div>
+      <div class="nf-box nf-chart dash-skeleton" id="sectors" data-source="by_sector"></div>
+    </section>
+  </div>
+
+  <section class="nf-card" id="site-card">
+    <h2>Site detail</h2>
+    <div class="nf-ctl"><label for="site-pick">Site</label><select id="site-pick" data-source="site_results"></select></div>
+    <p class="nf-sitenote" id="site-note"></p>
+    <div class="note">Area in the river outline (low-flow channel plus 100 m) from one clear January scene per dry season. Hollow points are hazy or partial scenes left out of the statistics.</div>
+    <div class="nf-legend" id="legend-series"></div>
+    <div class="nf-box nf-chart dash-skeleton" id="series" data-source="series"></div>
+  </section>
+
+  <section class="nf-card" id="table-card">
+    <h2>Analysed sites</h2>
+    <div class="note">Click a row to open the site above.</div>
+    <div class="nf-tablebox">
+      <table class="nf-table" id="site-table" data-source="site_table" data-row-key="site">
+        <thead><tr>
+          <th data-field="site">Site</th><th data-field="sector">Sector</th><th data-field="river">River</th><th data-field="type">Result</th>
+          <th data-field="visual_onset">Visual onset</th><th data-field="water_break" class="hide-n">Water break</th><th data-field="water_p" class="hide-n">p</th>
+          <th data-field="aoi_ha" class="hide-n">Outline (ha)</th><th data-field="note">Note</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="nf-card" id="screen-card">
+    <h2>Screening of all sites</h2>
+    <div class="note">Each of the 83 inventory site windows was checked on Google satellite imagery before analysis; N-numbered reaches are not in the inventory and were added from news reports of extraction. Skipped sites and the reason; click an analysed site to open it above.</div>
+    <div class="nf-ctl"><label for="screen-q">Search</label><input id="screen-q" type="search" placeholder="Site, sector or reason"></div>
+    <div class="nf-tablebox">
+      <table class="nf-table" id="screen-table" data-source="screen_table" data-row-key="site">
+        <thead><tr><th data-field="site">Site</th><th data-field="sector">Sector</th><th data-field="country">Country</th><th data-field="n_rec">Records</th><th data-field="status">Status</th><th data-field="reason">Result or reason</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+window.NF = {
+  groups: ['Sand Mining', 'Other extraction', 'Deposit/depot', 'Vessels', 'River/floodplain', 'Named feature', 'Uncertain label'],
+  types: ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss', 'Bar vegetation', 'No signal', 'Skipped'],
+  typeColor: {
+    'Pit extraction': 'var(--cds-chart-status-critical)',
+    'Floodplain pits': 'var(--nf-fpit)',
+    'Possible dredging': 'var(--color-warn)',
+    'Bar loss': 'var(--color-fg)',
+    'Bar vegetation': 'var(--color-ok)',
+    'No signal': 'var(--cds-chart-muted)',
+    'Skipped': 'var(--cds-chart-muted)',
+    'Not yet run': 'var(--color-border-line)'
+  },
+  hidden: new Set(),
+  site: 'E076'
+};
+
+dash.calc('site_table', {
+  title: 'Analysed sites with breaks',
+  description: 'Joins the result for each analysed site with its Pettitt breaks and its sector and position.',
+  inputs: ['site_results', 'onset', 'sites'],
+  fn: (site_results, onset, sites) => site_results.map((r) => {
+    const o = onset.find((x) => x.site === r.site) || {};
+    const s = sites.find((x) => x.site_id === r.site) || {};
+    return {
+      site: r.site, sector: s.sector, lon: Number(s.lon), river: r.river, type: r.type, visual_onset: r.visual_onset, note: r.note,
+      water_break: o.water_break ? Number(o.water_break) : null, water_p: o.water_p ? Number(o.water_p) : null,
+      water_before: o.water_before ? Number(o.water_before) : null, water_after: o.water_after ? Number(o.water_after) : null,
+      aoi_ha: o.aoi_ha ? Number(o.aoi_ha) : null,
+      sand_break: o.sand_break ? Number(o.sand_break) : null, sand_before: o.sand_before ? Number(o.sand_before) : null, sand_after: o.sand_after ? Number(o.sand_after) : null, sand_p: o.sand_p ? Number(o.sand_p) : null,
+      s2w_break: o.s2w_break ? Number(o.s2w_break) : null, s2w_before: o.s2w_before ? Number(o.s2w_before) : null, s2w_after: o.s2w_after ? Number(o.s2w_after) : null, s2w_p: o.s2w_p ? Number(o.s2w_p) : null,
+      n_seasons: o.n_seasons ? Number(o.n_seasons) : null, slon: Number(s.lon), slat: Number(s.lat), n_rec: Number(s.n_rec), country: s.admin0
+    };
+  })
+});
+
+dash.calc('class_by_sector', {
+  title: 'Site results by sector',
+  description: 'Counts the 83 sites in each sector by low-flow result, or as skipped at screening.',
+  inputs: ['sites', 'site_results', 'screening'],
+  fn: (sites, site_results, screening) => sites.map((s) => {
+    const r = site_results.find((x) => x.site === s.site_id);
+    const sc = screening.find((x) => x.site === s.site_id);
+    return { site: s.site_id, sector: s.sector, cls: r ? r.type : (sc && sc.status === 'Skipped' ? 'Skipped' : 'Not yet run') };
+  })
+});
+
+dash.calc('screen_table', {
+  title: 'Screening of all sites',
+  description: 'Joins each site window with its screening status and, for analysed sites, the result class.',
+  inputs: ['sites', 'site_results', 'screening'],
+  fn: (sites, site_results, screening) => sites.map((s) => {
+    const r = site_results.find((x) => x.site === s.site_id);
+    const sc = screening.find((x) => x.site === s.site_id) || {};
+    return { site: s.site_id, sector: s.sector, country: s.admin0, n_rec: Number(s.n_rec), status: sc.status || 'Not screened', reason: r ? `${r.type}${r.visual_onset ? ', ' + r.visual_onset : ''}` : (sc.reason || '') };
+  })
+});
+
+dash.calc('by_sector', {
+  title: 'Inventory points by sector',
+  description: 'Counts inventory points in each sector and label group.',
+  inputs: ['inventory'],
+  fn: (inventory) => {
+    const out = [];
+    const sectors = Array.from(new Set(inventory.map((r) => r.sector))).sort();
+    const groups = Array.from(new Set(inventory.map((r) => r.group)));
+    sectors.forEach((s) => groups.forEach((g) => out.push({ sector: s, group: g, n: inventory.filter((r) => r.sector === s && r.group === g).length })));
+    return out;
+  }
+});
+
+dash.calc('spread', {
+  title: 'First year of change by position',
+  description: 'For each analysed site with an extraction signal (pit extraction, floodplain pits, possible dredging, bar loss): its longitude, sector and the first year of its visual onset.',
+  inputs: ['site_table'],
+  fn: (site_table) => site_table
+    .filter((r) => ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'].includes(r.type) && /\d{4}/.test(String(r.visual_onset || '')))
+    .map((r) => ({ site: r.site, sector: r.sector, lon: r.lon, type: r.type, river: r.river, year: Number(String(r.visual_onset).match(/\d{4}/)[0]), pit: r.type === 'Pit extraction' || r.type === 'Floodplain pits' }))
+});
+
+dash.calc('onset_map', {
+  title: 'First year of change per site',
+  description: 'For each analysed site: its position, result class and the first year of its visual onset (null where the class is not an extraction-type change or no year is given).',
+  inputs: ['site_table'],
+  fn: (site_table) => site_table.filter((r) => Number.isFinite(r.slon) && Number.isFinite(r.slat)).map((r) => {
+    const ext = ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'].includes(r.type);
+    const m = String(r.visual_onset || '').match(/\d{4}/);
+    return { site: r.site, sector: r.sector, lon: r.slon, lat: r.slat, river: r.river, type: r.type, visual_onset: r.visual_onset, year: ext && m ? Number(m[0]) : null };
+  })
+});
+
+dash.calc('spread_sector', {
+  title: 'Median first year of change per sector',
+  description: 'Per sector: number of dated sites with an extraction signal, the median first year, and the first and last year among pit sites.',
+  inputs: ['spread'],
+  fn: (spread) => Array.from(new Set(spread.map((r) => r.sector))).sort().map((sec) => {
+    const rows = spread.filter((r) => r.sector === sec);
+    const ys = rows.map((r) => r.year).sort((a, b) => a - b);
+    const pits = rows.filter((r) => r.pit).sort((a, b) => a.year - b.year);
+    const med = ys.length % 2 ? ys[(ys.length - 1) / 2] : Math.round((ys[ys.length / 2 - 1] + ys[ys.length / 2]) / 2);
+    return { sector: sec, n: rows.length, median: med, pit_first: pits.length ? pits[0].year : null, pit_last: pits.length ? pits[pits.length - 1].year : null, pits: pits.map((r) => `${r.site} ${r.year}`).join(', ') };
+  })
+});
+
+dash.calc('summary', {
+  title: 'Headline figures',
+  description: 'Counts of points, sites, analysed sites and pit-type sites, and the range of pit onsets.',
+  inputs: ['inventory', 'sites', 'site_results'],
+  fn: (inventory, sites, site_results) => {
+    const pit = site_results.filter((r) => r.type === 'Pit extraction' || r.type === 'Floodplain pits');
+    const firstYears = pit.map((r) => Number(String(r.visual_onset).slice(0, 4))).filter((y) => y > 0);
+    const lo = Math.min(...firstYears), hi = Math.max(...firstYears);
+    return [{
+      points: inventory.length, sites: sites.filter((s) => s.site_id[0] === 'E').length, analysed: site_results.length, pit: pit.length,
+      takeaway: `${site_results.length} river sites analysed along the northern border: ${site_results.filter((r) => r.site[0] === 'E').length} clustered from the inventory and ${site_results.filter((r) => r.site[0] === 'N').length} reaches added from news reports and screening. ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`
+    }];
+  }
+});
+</script>
+
+<script>
+(function () {
+  const tip = () => document.querySelector('#map .nf-tip');
+  const typeOf = (sid, res) => (res.find((r) => r.site === sid) || {}).type || 'Not yet run';
+  let zoomT = null;
+
+  function legends(inv, res) {
+    const lg = document.getElementById('legend-groups');
+    lg.replaceChildren();
+    NF.groups.forEach((g, i) => {
+      const n = inv.filter((r) => r.group === g).length;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', NF.hidden.has(g) ? 'false' : 'true');
+      const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = dash.colors[i];
+      const t = document.createElement('span'); t.textContent = `${g} (${n})`;
+      b.append(sw, t);
+      b.addEventListener('click', () => { NF.hidden.has(g) ? NF.hidden.delete(g) : NF.hidden.add(g); draw(); });
+      lg.append(b);
+    });
+    const lt = document.getElementById('legend-types');
+    lt.replaceChildren();
+    const mkl = document.createElement('span'); mkl.style.display = 'inline-flex'; mkl.style.alignItems = 'center'; mkl.style.gap = '6px';
+    const dia = document.createElement('span'); dia.style.cssText = 'width:9px;height:9px;transform:rotate(45deg);display:inline-block;background:var(--color-fg)';
+    const mt = document.createElement('span'); mt.textContent = 'Analysed site (click for details):'; mt.style.fontWeight = '600';
+    mkl.append(dia, mt); lt.append(mkl);
+    NF.types.forEach((ty) => {
+      const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px';
+      const sq = document.createElement('span'); sq.className = 'nf-sq'; sq.style.borderColor = NF.typeColor[ty];
+      const t = document.createElement('span'); t.textContent = ty;
+      s.append(sq, t); lt.append(s);
+    });
+  }
+
+  function draw() {
+    const a = dash.data('inventory'), b = dash.data('sites'), c = dash.data('site_results');
+    const box = document.getElementById('map');
+    if (a.status !== 'ok' || b.status !== 'ok' || c.status !== 'ok') {
+      if ([a, b, c].some((d) => d.status === 'error')) { box.classList.remove('dash-skeleton'); box.textContent = 'Failed to load'; }
+      return;
+    }
+    box.classList.remove('dash-skeleton');
+    const inv = a.data.map((r) => ({ ...r, lon: +r.lon, lat: +r.lat }));
+    const sites = b.data.map((r) => ({ ...r, w: +r.west, e: +r.east, s: +r.south, n: +r.north }));
+    const res = c.data;
+    const scr = dash.data('screening'); const scrRows = scr.status === 'ok' ? scr.data : [];
+    const reasonOf = (sid) => (scrRows.find((x) => x.site === sid) || {}).reason || '';
+    const typeOf = (sid, rr) => { const a = rr.find((r) => r.site === sid); if (a) return a.type; const s = scrRows.find((x) => x.site === sid); return s && s.status === 'Skipped' ? 'Skipped' : 'Not yet run'; };
+    legends(inv, res);
+    const cn = dash.data('countries'), rv = dash.data('rivers'), lb = dash.data('labels');
+    const W = box.clientWidth, H = Math.round(Math.max(440, Math.min(820, W * 1.05)));
+    box.style.minHeight = H + 'px';
+    const k = Math.cos(23.7 * Math.PI / 180);
+    const xE = [87.8, 93.0], yE = [20.5, 27.0];
+    const dx = (xE[1] - xE[0]) * k, dy = yE[1] - yE[0];
+    const sc = Math.min(W / dx, H / dy);
+    const ox = (W - dx * sc) / 2, oy = (H - dy * sc) / 2;
+    const X = (lon) => ox + (lon - xE[0]) * k * sc;
+    const Y = (lat) => oy + (yE[1] - lat) * sc;
+    const path = (s) => 'M' + s.split(';').map((p) => { const q = p.split(','); return X(+q[0]).toFixed(1) + ',' + Y(+q[1]).toFixed(1); }).join('L');
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).style('display', 'block').style('touch-action', 'none');
+    svg.append('rect').attr('width', W).attr('height', H).style('fill', 'var(--nf-sea)');
+    const g = svg.append('g');
+    const base = g.append('g');
+    if (cn.status === 'ok') {
+      base.append('g').selectAll('path').data(cn.data).join('path')
+        .attr('d', (c) => c.rings.split('|').map((r) => path(r) + 'Z').join(''))
+        .style('fill', (c) => (c.country === 'BGD' ? 'var(--nf-land-bd)' : 'var(--nf-land)'))
+        .style('stroke', (c) => (c.country === 'BGD' ? 'var(--color-fg-muted)' : 'var(--color-border-line)'))
+        .attr('data-w', (c) => (c.country === 'BGD' ? 1.2 : 0.8)).attr('class', 'nf-line')
+        .style('stroke-width', (c) => (c.country === 'BGD' ? 1.2 : 0.8));
+    }
+    if (rv.status === 'ok') {
+      base.append('g').selectAll('path').data(rv.data).join('path').attr('d', (r) => path(r.coords)).attr('class', 'nf-line')
+        .style('fill', 'none').style('stroke', 'var(--nf-river)').style('stroke-linecap', 'round').style('stroke-linejoin', 'round')
+        .attr('data-w', (r) => [0, 0.6, 1.3, 2.8][+r['class']]).style('stroke-width', (r) => [0, 0.6, 1.3, 2.8][+r['class']]);
+    }
+    const gr = g.append('g');
+    d3.range(88, 94).forEach((lon) => {
+      gr.append('line').attr('class', 'nf-line').attr('data-w', 1).attr('x1', X(lon)).attr('x2', X(lon)).attr('y1', 0).attr('y2', H).style('stroke', 'var(--cds-chart-grid)');
+    });
+    d3.range(21, 27).forEach((lat) => {
+      gr.append('line').attr('class', 'nf-line').attr('data-w', 1).attr('y1', Y(lat)).attr('y2', Y(lat)).attr('x1', 0).attr('x2', W).style('stroke', 'var(--cds-chart-grid)');
+    });
+    const labs = svg.append('g');
+    if (lb.status === 'ok') {
+      labs.selectAll('text').data(lb.data).join('text').attr('class', 'nf-lab').attr('text-anchor', 'middle')
+        .attr('data-lon', (l) => l.lon).attr('data-lat', (l) => l.lat).text((l) => l.name)
+        .style('fill', (l) => (l.kind === 'country' ? 'var(--color-fg-muted)' : 'var(--nf-river-text)'))
+        .style('font-style', (l) => (l.kind === 'river' ? 'italic' : 'normal'))
+        .style('letter-spacing', (l) => (l.kind === 'country' ? '0.14em' : 'normal'))
+        .style('font-size', (l) => (l.kind === 'country' ? '12px' : '10px'));
+    }
+    d3.groups(inv, (d) => d.sector).forEach(([s, rows]) => {
+      labs.append('text').attr('class', 'nf-lab').attr('text-anchor', 'middle')
+        .attr('data-lon', d3.median(rows, (r) => r.lon)).attr('data-lat', d3.max(rows, (r) => r.lat) + 0.12)
+        .text(s).style('fill', 'var(--color-fg)').style('font-size', '11px').style('font-weight', 600);
+    });
+    const rects = g.append('g').selectAll('rect').data(sites).join('rect')
+      .attr('x', (d) => X(d.w)).attr('y', (d) => Y(d.n)).attr('width', (d) => Math.max(2, X(d.e) - X(d.w))).attr('height', (d) => Math.max(2, Y(d.s) - Y(d.n)))
+      .style('fill', 'transparent').style('stroke', (d) => NF.typeColor[typeOf(d.site_id, res)])
+      .style('stroke-width', (d) => (['Not yet run', 'Skipped'].includes(typeOf(d.site_id, res)) ? 1 : 2.5)).style('cursor', 'pointer')
+      .style('stroke-dasharray', (d) => (typeOf(d.site_id, res) === 'Skipped' ? '3 2' : null));
+    const pts = g.append('g').selectAll('circle').data(inv.filter((d) => !NF.hidden.has(d.group))).join('circle')
+      .attr('cx', (d) => X(d.lon)).attr('cy', (d) => Y(d.lat)).attr('r', 3)
+      .style('fill', (d) => dash.colors[NF.groups.indexOf(d.group)]).style('fill-opacity', 0.85).style('stroke', 'var(--color-bg)').style('stroke-width', 0.6);
+    const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+    const show = (ev, html) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tp.attr('hidden', null).html('');
+      html(tp);
+      const tw = tp.node().offsetWidth;
+      tp.style('left', Math.min(W - tw - 4, mx + 12) + 'px').style('top', (my + 12) + 'px');
+    };
+    pts.on('mousemove', (ev, d) => show(ev, (t) => {
+      t.append('div').attr('class', 't').text(`#${d.rid} · ${d.sector} · ${d.country}`);
+      t.append('div').text(d.name);
+      t.append('div').text(`${d.group}; imagery ${d.ge_date || 'n/a'}; ${d.dist_border_km} km from border`);
+    })).on('mouseleave', () => tp.attr('hidden', true));
+    rects.on('mousemove', (ev, d) => show(ev, (t) => {
+      t.append('div').attr('class', 't').text(`${d.site_id} · ${d.sector} · ${d.admin0} · ${d.n_rec} records`);
+      t.append('div').text(typeOf(d.site_id, res) === 'Skipped' ? 'Skipped: ' + reasonOf(d.site_id) : typeOf(d.site_id, res));
+    })).on('mouseleave', () => tp.attr('hidden', true))
+      .on('click', (ev, d) => { if (res.some((r) => r.site === d.site_id)) { NF.site = d.site_id; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+    const st = dash.data('site_table'), se = dash.data('series');
+    const anal = st.status === 'ok' ? st.data.filter((r) => Number.isFinite(r.slon)) : [];
+    const sym = d3.symbol(d3.symbolDiamond, 150);
+    const mk = g.append('g').selectAll('path').data(anal).join('path').attr('class', 'nf-mk').attr('d', sym)
+      .style('fill', (d) => NF.typeColor[d.type]).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5).style('cursor', 'pointer')
+      .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (d) => `${d.site}, ${d.type}: open details`);
+    const mkl = labs.append('g').selectAll('text').data(anal).join('text').attr('class', 'nf-lab nf-mklab')
+      .attr('data-lon', (d) => d.slon).attr('data-lat', (d) => d.slat).attr('dx', 9).attr('dy', 4).text((d) => d.site)
+      .style('fill', 'var(--color-fg)').style('font-size', '11px').style('font-weight', 600).style('paint-order', 'stroke').style('stroke', 'var(--color-bg)').style('stroke-width', 3).style('pointer-events', 'none');
+    const fmt = (v, dgt = 1) => (v == null || !Number.isFinite(v) ? 'n/a' : v.toFixed(dgt));
+    const fp = (p) => (p == null ? '' : p < 0.001 ? ' (p < 0.001)' : ` (p = ${p.toFixed(3)})`);
+    const openInfo = (d) => {
+      box.querySelectorAll('.nf-pop').forEach((n) => n.remove());
+      tp.attr('hidden', true);
+      const pop = document.createElement('div'); pop.className = 'nf-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', d.site + ' details');
+      const x = document.createElement('button'); x.className = 'x'; x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Close');
+      x.onclick = () => { pop.remove(); NF.open = null; };
+      const h = document.createElement('h3'); h.textContent = `${d.site} · ${d.river}`;
+      const pill = document.createElement('div'); const pl = document.createElement('span'); pl.className = 'nf-pill'; pl.style.color = NF.typeColor[d.type]; pl.textContent = d.type; pill.append(pl);
+      pop.append(x, h, pill);
+      const row = (k, v) => { const r = document.createElement('div'); r.className = 'row'; const a1 = document.createElement('span'); a1.textContent = k; const a2 = document.createElement('span'); a2.textContent = v; r.append(a1, a2); pop.append(r); };
+      row('Sector, country', `${d.sector}, ${d.country}; ${d.n_rec} inventory records`);
+      row('Visual onset', d.visual_onset || 'none');
+      row('River outline', `${fmt(d.aoi_ha, 0)} ha; ${d.n_seasons ?? 'n/a'} usable Januarys`);
+      row('Water break', d.water_break ? `${d.water_break}: ${fmt(d.water_before)} → ${fmt(d.water_after)} ha${fp(d.water_p)}` : 'n/a');
+      row('Sand break', d.sand_break ? `${d.sand_break}: ${fmt(d.sand_before)} → ${fmt(d.sand_after)} ha${fp(d.sand_p)}` : 'n/a');
+      row('Sand-to-water break', d.s2w_break ? `${d.s2w_break}: ${fmt(d.s2w_before)} → ${fmt(d.s2w_after)} ha${fp(d.s2w_p)}` : 'n/a');
+      const note = document.createElement('p'); note.className = 'txt'; note.textContent = d.note; pop.append(note);
+      const ch = dash.data('chips');
+      if (ch.status === 'ok') {
+        const cr = ch.data.filter((q) => q.site === d.site).sort((p, q) => p.season - q.season);
+        if (cr.length) {
+          const hd = document.createElement('div'); hd.className = 'nf-sub';
+          hd.textContent = 'January Landsat scenes: baseline, before and after the change, latest (outside the river outline faded)';
+          pop.append(hd);
+          const mkGrid = (kind) => {
+            const gd = document.createElement('div'); gd.className = 'nf-chips';
+            cr.forEach((q) => {
+              const f = document.createElement('figure'); f.className = 'nf-chip'; f.style.margin = '0';
+              const im = document.createElement('img'); im.src = 'data:image/' + (kind === 'img' && q.fmt ? q.fmt : 'png') + ';base64,' + q[kind]; im.width = q.w; im.height = q.h;
+              im.alt = `${d.site} ${q.season} ${kind === 'img' ? 'satellite image' : 'classes'}`;
+              const cap = document.createElement('figcaption'); cap.className = 'cap';
+              const b = document.createElement('b'); b.textContent = q.season;
+              const sp = document.createElement('span');
+              sp.textContent = kind === 'img' ? ` ${q.sensor} ${q.date}` : ` water ${(+q.water_ha).toFixed(0)}, sand ${(+q.sand_ha).toFixed(0)} ha`;
+              cap.append(b, sp); f.append(im, cap); gd.append(f);
+            });
+            return gd;
+          };
+          pop.append(mkGrid('img'));
+          const hc = document.createElement('div'); hc.className = 'nf-sub'; hc.textContent = 'Classification inside the river outline'; pop.append(hc);
+          pop.append(mkGrid('cls'));
+          const lg2 = document.createElement('div'); lg2.className = 'nf-clsleg';
+          [['#1f4e9c', 'Water'], ['#f2d27a', 'Sand / bare bed'], ['#4f9a45', 'Vegetation'], ['#c8c3b8', 'Other'], ['#ffffff', 'Cloud / no data']].forEach(([c, l]) => {
+            const s = document.createElement('span'); const i = document.createElement('i'); i.style.background = c; s.append(i, document.createTextNode(l)); lg2.append(s);
+          });
+          pop.append(lg2);
+        }
+      }
+      if (se.status === 'ok') {
+        const rows = se.data.filter((q) => q.site === d.site).map((q) => ({ y: +q.season, f: q.flag, w: +q.water_ha, s: +q.sand_ha }));
+        const sw = 290, sh = 90, m = { l: 26, r: 6, t: 6, b: 16 };
+        const sv = d3.select(pop).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${sw} ${sh}`);
+        const xs = d3.scaleLinear([1988, 2025], [m.l, sw - m.r]);
+        const ys = d3.scaleLinear([0, d3.max(rows, (q) => Math.max(q.w, q.s)) || 1], [sh - m.b, m.t]).nice();
+        sv.append('g').attr('class', 'axis').attr('transform', `translate(0,${sh - m.b})`).call(d3.axisBottom(xs).ticks(4).tickFormat(d3.format('d')).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
+        sv.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(ys).ticks(3).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
+        const ok = rows.filter((q) => !q.f);
+        [['w', 0], ['s', 1]].forEach(([kk, i]) => sv.append('path').datum(ok).attr('d', d3.line().x((q) => xs(q.y)).y((q) => ys(q[kk])))
+          .style('fill', 'none').style('stroke', dash.colors[i]).style('stroke-width', 1.6).style('stroke-linejoin', 'round'));
+        if (d.water_break) sv.append('line').attr('x1', xs(d.water_break)).attr('x2', xs(d.water_break)).attr('y1', m.t).attr('y2', sh - m.b).style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '3 3');
+        const lg = document.createElement('div'); lg.style.color = 'var(--color-fg-muted)';
+        lg.textContent = 'Low-flow water (first colour) and sand (second colour), ha; dashed line = water break';
+        pop.append(lg);
+      }
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'nf-btn'; b.textContent = 'Open full series below';
+      b.onclick = () => { NF.site = d.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      pop.append(b);
+      box.append(pop); NF.open = d.site; x.focus();
+    };
+    mk.on('click', (ev, d) => { ev.stopPropagation(); openInfo(d); })
+      .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openInfo(d); } })
+      .on('mousemove', (ev, d) => show(ev, (t) => { t.append('div').attr('class', 't').text(`${d.site} · ${d.type}`); t.append('div').text('Click for details'); }))
+      .on('mouseleave', () => tp.attr('hidden', true));
+    rects.on('click', (ev, d) => { const a = anal.find((r) => r.site === d.site_id); if (a) openInfo(a); });
+    const z = d3.zoom().scaleExtent([1, 60]).translateExtent([[0, 0], [W, H]]).on('zoom', (ev) => {
+      zoomT = ev.transform; g.attr('transform', zoomT);
+      pts.attr('r', 3 / Math.sqrt(zoomT.k)).style('stroke-width', 0.6 / zoomT.k);
+      rects.style('stroke-width', (d) => (['Not yet run', 'Skipped'].includes(typeOf(d.site_id, res)) ? 1 : 2.5) / zoomT.k);
+      g.selectAll('.nf-line').style('stroke-width', function () { return (+this.getAttribute('data-w')) / Math.sqrt(zoomT.k); });
+      mk.attr('transform', (d) => `translate(${X(d.slon)},${Y(d.slat)}) scale(${1 / Math.sqrt(zoomT.k)})`);
+      mkl.style('display', zoomT.k >= 3 ? null : 'none');
+      labs.selectAll('text').attr('x', function () { return zoomT.applyX(X(+this.getAttribute('data-lon'))); })
+        .attr('y', function () { return zoomT.applyY(Y(+this.getAttribute('data-lat'))); })
+        .attr('display', function () { const x = +this.getAttribute('x'), y = +this.getAttribute('y'); return (x < 30 || x > W - 30 || y < 14 || y > H - 6) ? 'none' : null; });
+      mkl.filter(function () { return this.getAttribute('display') === 'none'; }).style('display', 'none');
+    });
+    if (!zoomT) { const kk = 1.9; zoomT = d3.zoomIdentity.translate(W / 2 - kk * X(90.4), H * 0.3 - kk * Y(25.4)).scale(kk); }
+    svg.call(z).call(z.transform, zoomT);
+    if (NF.open) { const a = anal.find((r) => r.site === NF.open); if (a) openInfo(a); }
+    const reset = document.getElementById('map-reset');
+    if (reset) reset.onclick = () => svg.transition().duration(400).call(z.transform, d3.zoomIdentity);
+  }
+
+  NF.year = 2025; NF.tl = null;
+  function drawTimeline() {
+    const d = dash.data('onset_map'), box = document.getElementById('tlmap'), cbox = document.getElementById('tlcum'), read = document.getElementById('tl-read');
+    if (d.status !== 'ok') { if (d.status === 'error') { box.classList.remove('dash-skeleton'); box.textContent = 'Failed to load'; } return; }
+    box.classList.remove('dash-skeleton');
+    const cn = dash.data('countries'), rv = dash.data('rivers'), ev = dash.data('events');
+    const rows = d.data;
+    const W = box.clientWidth; if (!W) return;
+    const key = W + ':' + rows.length + ':' + (cn.status === 'ok') + ':' + (rv.status === 'ok');
+    if (!NF.tl || NF.tl.key !== key) {
+      const xE = [88.2, 92.55], yE = [24.65, 26.75];
+      const k = Math.cos(25.7 * Math.PI / 180);
+      const sc = W / ((xE[1] - xE[0]) * k);
+      const H = Math.round((yE[1] - yE[0]) * sc);
+      box.style.minHeight = H + 'px';
+      const X = (lon) => (lon - xE[0]) * k * sc, Y = (lat) => (yE[1] - lat) * sc;
+      const path = (p) => 'M' + p.split(';').map((q) => { const r = q.split(','); return X(+r[0]).toFixed(1) + ',' + Y(+r[1]).toFixed(1); }).join('L');
+      box.replaceChildren();
+      const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).style('display', 'block');
+      svg.append('rect').attr('width', W).attr('height', H).style('fill', 'var(--nf-sea)');
+      if (cn.status === 'ok') {
+        svg.append('g').selectAll('path').data(cn.data).join('path').attr('d', (c) => c.rings.split('|').map((r) => path(r) + 'Z').join(''))
+          .style('fill', (c) => (c.country === 'BGD' ? 'var(--nf-land-bd)' : 'var(--nf-land)')).style('stroke', (c) => (c.country === 'BGD' ? 'var(--color-fg-muted)' : 'var(--color-border-line)')).style('stroke-width', (c) => (c.country === 'BGD' ? 1 : 0.7));
+      }
+      if (rv.status === 'ok') {
+        svg.append('g').selectAll('path').data(rv.data.filter((r) => +r['class'] >= 1)).join('path').attr('d', (r) => path(r.coords))
+          .style('fill', 'none').style('stroke', 'var(--nf-river)').style('stroke-linecap', 'round').style('stroke-width', (r) => [0, 0.5, 1, 2][+r['class']]).style('opacity', 0.8);
+      }
+      const labs = svg.append('g');
+      d3.groups(rows, (r) => r.sector).forEach(([sec, rr]) => {
+        labs.append('text').attr('x', X(d3.median(rr, (r) => r.lon))).attr('y', Y(yE[0]) - 6).attr('text-anchor', 'middle').text(sec).style('fill', 'var(--color-fg-muted)').style('font-size', '11px').style('font-weight', 600);
+      });
+      [['INDIA', 88.6, 25.3], ['BANGLADESH', 90.0, 25.3], ['INDIA', 91.6, 25.62]].forEach(([t, lo, la]) => labs.append('text').attr('x', X(lo)).attr('y', Y(la)).attr('text-anchor', 'middle').text(t).style('fill', 'var(--color-fg-muted)').style('font-size', '10px').style('letter-spacing', '0.14em'));
+      const undated = rows.filter((r) => r.year == null), dated = rows.filter((r) => r.year != null);
+      svg.append('g').selectAll('circle').data(undated).join('circle').attr('cx', (r) => X(r.lon)).attr('cy', (r) => Y(r.lat)).attr('r', 2.5).style('fill', 'var(--cds-chart-muted)').style('fill-opacity', 0.5).style('stroke', 'none');
+      const sym = d3.symbol(d3.symbolDiamond, 110);
+      const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+      const mk = svg.append('g').selectAll('path').data(dated).join('path').attr('class', 'nf-tlmk').attr('d', sym).attr('transform', (r) => `translate(${X(r.lon)},${Y(r.lat)})`)
+        .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => `${r.site}, ${r.type}, first change ${r.year}`)
+        .on('mousemove', (e, r) => { const [mx, my] = d3.pointer(e, box); tp.attr('hidden', null).html(''); tp.append('div').attr('class', 't').text(`${r.site} · ${r.sector} · ${r.type}`); tp.append('div').text(r.river); tp.append('div').text(`First change ${r.year} (visual onset ${r.visual_onset})`); const tw = tp.node().offsetWidth; tp.style('left', Math.min(W - tw - 4, mx + 12) + 'px').style('top', (my + 12) + 'px'); })
+        .on('mouseleave', () => tp.attr('hidden', true))
+        .on('click', (e, r) => { if (r.year <= NF.year) { NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } })
+        .on('keydown', (e, r) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+      // cumulative strip
+      cbox.replaceChildren();
+      const cw = W, chh = 110, m = { l: 34, r: 10, t: 8, b: 22 };
+      const cs = d3.select(cbox).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${cw} ${chh}`).attr('height', chh).style('display', 'block');
+      const xs = d3.scaleLinear([1988, 2025], [m.l, cw - m.r]);
+      const secs = Array.from(new Set(dated.map((r) => r.sector))).sort();
+      const years = d3.range(1988, 2026);
+      const cum = secs.map((sec, i) => ({ sec, i, pts: years.map((y) => ({ y, n: dated.filter((r) => r.sector === sec && r.year <= y).length })) }));
+      const tot = years.map((y) => ({ y, n: dated.filter((r) => r.year <= y).length }));
+      const ys = d3.scaleLinear([0, d3.max(tot, (p) => p.n) || 1], [chh - m.b, m.t]).nice();
+      cs.append('g').attr('class', 'grid').call(d3.axisLeft(ys).ticks(3).tickSize(-(cw - m.l - m.r)).tickFormat('')).attr('transform', `translate(${m.l},0)`);
+      cs.append('g').attr('class', 'axis').attr('transform', `translate(0,${chh - m.b})`).call(d3.axisBottom(xs).ticks(8).tickFormat(d3.format('d')).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
+      cs.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(ys).ticks(3).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
+      if (ev.status === 'ok') ev.data.forEach((e) => cs.append('line').attr('x1', xs(+e.year)).attr('x2', xs(+e.year)).attr('y1', m.t).attr('y2', chh - m.b).style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '2 3'));
+      const line = d3.line().x((p) => xs(p.y)).y((p) => ys(p.n)).curve(d3.curveStepAfter);
+      cs.append('path').datum(tot).attr('d', line).style('fill', 'none').style('stroke', 'var(--color-fg)').style('stroke-width', 2);
+      cum.forEach((c) => cs.append('path').datum(c.pts).attr('d', line).style('fill', 'none').style('stroke', dash.colors[c.i % dash.colors.length]).style('stroke-width', 1.2).style('opacity', 0.9));
+      const cur = cs.append('line').attr('y1', m.t).attr('y2', chh - m.b).style('stroke', 'var(--color-fg)').style('stroke-width', 1.5);
+      const curT = cs.append('text').attr('y', m.t + 10).style('font-size', '11px').style('fill', 'var(--color-fg)').style('font-weight', 600);
+      const lg = cs.append('g').attr('transform', `translate(${m.l + 6},${m.t})`);
+      [['All dated sites', 'var(--color-fg)']].concat(secs.map((sec, i) => [sec, dash.colors[i % dash.colors.length]])).forEach(([t, c], i) => {
+        const gx = lg.append('g').attr('transform', `translate(${i ? 110 + (i - 1) * 52 : 0},0)`);
+        gx.append('line').attr('x1', 0).attr('x2', 14).attr('y1', 4).attr('y2', 4).style('stroke', c).style('stroke-width', i ? 1.2 : 2);
+        gx.append('text').attr('x', 18).attr('y', 8).text(t).style('font-size', '10px').style('fill', 'var(--color-fg-muted)');
+      });
+      cbox.querySelector('svg').setAttribute('aria-label', 'Cumulative number of dated sites with change, by sector');
+      NF.tl = { key, update(year) {
+        mk.style('fill', (r) => (r.year <= year ? NF.typeColor[r.type] : 'transparent'))
+          .style('stroke', (r) => (r.year <= year ? (year - r.year <= 2 ? 'var(--color-fg)' : 'var(--color-bg)') : 'var(--cds-chart-muted)'))
+          .style('stroke-width', (r) => (r.year <= year && year - r.year <= 2 ? 2.5 : 1.2))
+          .style('opacity', (r) => (r.year <= year ? 1 : 0.7))
+          .attr('transform', (r) => `translate(${X(r.lon)},${Y(r.lat)}) scale(${r.year <= year ? 1 : 0.7})`);
+        cur.attr('x1', xs(year)).attr('x2', xs(year)); curT.attr('x', xs(year) + 4).text(year);
+        const on = dated.filter((r) => r.year <= year), fresh = on.filter((r) => year - r.year <= 2);
+        const bySec = secs.map((sec) => `${sec} ${on.filter((r) => r.sector === sec).length}`).join(', ');
+        read.textContent = `By the January ${year} scene, ${on.length} of ${dated.length} dated sites show an extraction-type change (${bySec}).` + (fresh.length ? ` New in ${year - 2} to ${year}: ${fresh.map((r) => `${r.site} ${r.river}`).join('; ')}.` : '');
+      } };
+    }
+    NF.tl.update(NF.year);
+  }
+  (function () {
+    const sl = document.getElementById('tl-year'), out = document.getElementById('tl-out'), pb = document.getElementById('tl-play');
+    let timer = null;
+    const set = (y) => { NF.year = +y; sl.value = y; out.textContent = y; if (NF.tl) NF.tl.update(NF.year); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } pb.textContent = 'Play'; };
+    sl.addEventListener('input', () => { stop(); set(sl.value); });
+    pb.addEventListener('click', () => {
+      if (timer) { stop(); return; }
+      let y = NF.year >= 2025 ? 1988 : NF.year; set(y); pb.textContent = 'Pause';
+      timer = setInterval(() => { y += 1; set(y); if (y >= 2025) stop(); }, 550);
+    });
+  })();
+
+  function drawOnset() {
+    const d = dash.data('site_table'), box = document.getElementById('onset');
+    if (d.status !== 'ok') return;
+    box.classList.remove('dash-skeleton');
+    const mode = document.getElementById('onset-filter').value;
+    const sig = ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'];
+    const rows = d.data.filter((r) => mode === 'all' || sig.includes(r.type)).sort((a, b) => a.lon - b.lon);
+    const ev = dash.data('events'); const evs = ev.status === 'ok' ? ev.data.map((e, i) => ({ ...e, n: i + 1, year: +e.year })) : [];
+    const W = box.clientWidth, rowH = 22;
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%');
+    const probe = svg.append('text').style('font-size', '12px').text('E000 S6');
+    const lw = probe.node().getComputedTextLength() + 10; probe.remove();
+    const m = { t: 22, r: 12, b: 26, l: lw };
+    const H = m.t + m.b + rows.length * rowH;
+    svg.attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    box.style.minHeight = H + 'px';
+    const x = d3.scaleLinear([1988, 2025], [m.l, W - m.r]);
+    const y = d3.scaleBand(rows.map((r) => r.site), [m.t, H - m.b]).padding(0.3);
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 4 : 8).tickFormat('').tickSize(-(H - m.b - m.t))).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 4 : 8).tickFormat(d3.format('d'))).attr('font-size', null).attr('font-family', null);
+    const eg = svg.append('g');
+    evs.forEach((e) => {
+      eg.append('line').attr('x1', x(e.year + 0.5)).attr('x2', x(e.year + 0.5)).attr('y1', m.t - 4).attr('y2', H - m.b)
+        .style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '4 3');
+      eg.append('text').attr('x', x(e.year + 0.5)).attr('y', m.t - 8 - (evs.filter((o) => o.year === e.year && o.n < e.n).length * 0)).attr('text-anchor', 'middle')
+        .attr('dx', evs.filter((o) => o.year === e.year && o.n < e.n).length * 10).text(e.n)
+        .style('fill', 'var(--color-fg-muted)').style('font-size', '10px').append('title').text(`${e.year}: ${e.label}`);
+    });
+    const el = document.getElementById('events-list'); el.replaceChildren();
+    evs.forEach((e) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = e.source; a.target = '_blank'; a.rel = 'noopener'; a.textContent = `${e.year}: ${e.label} (${e.scope})`; li.append(a); el.append(li); });
+    svg.append('g').selectAll('text').data(rows).join('text').attr('x', 4).attr('y', (r) => y(r.site) + y.bandwidth() / 2 + 4)
+      .text((r) => `${r.site} ${r.sector}`).style('fill', 'var(--color-fg)').style('font-size', '12px').style('cursor', 'pointer')
+      .on('click', (ev, r) => { NF.site = r.site; drawSeries(); });
+    const span = (r) => {
+      const ys = String(r.visual_onset || '').match(/\d{4}/g);
+      if (!ys) return null;
+      const a = +ys[0], b = ys[1] ? +ys[1] : (/onward/.test(r.visual_onset) ? 2025 : a);
+      return [a, b];
+    };
+    svg.append('g').selectAll('rect').data(rows.filter(span)).join('rect')
+      .attr('x', (r) => x(span(r)[0])).attr('width', (r) => Math.max(4, x(span(r)[1]) - x(span(r)[0])))
+      .attr('y', (r) => y(r.site)).attr('height', y.bandwidth()).attr('rx', 4)
+      .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.55);
+    svg.append('g').selectAll('circle').data(rows.filter((r) => r.water_break)).join('circle')
+      .attr('cx', (r) => x(r.water_break)).attr('cy', (r) => y(r.site) + y.bandwidth() / 2).attr('r', 4)
+      .style('stroke', 'var(--color-fg)').style('stroke-width', 1.5)
+      .style('fill', (r) => (r.water_p < 0.05 ? 'var(--color-fg)' : 'var(--color-panel)'));
+  }
+
+  function drawSpread() {
+    const d = dash.data('spread'), box = document.getElementById('spread');
+    if (d.status !== 'ok') return;
+    box.classList.remove('dash-skeleton');
+    const keys = ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'];
+    const lg = document.getElementById('legend-spread'); lg.replaceChildren();
+    keys.forEach((k) => { const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px'; const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = NF.typeColor[k]; const tx = document.createElement('span'); tx.textContent = k; s.append(sw, tx); lg.append(s); });
+    const rows = d.data;
+    const W = box.clientWidth, H = 320, m = { t: 26, r: 14, b: 30, l: 40 };
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const x = d3.scaleLinear([88.3, 92.4], [m.l, W - m.r]);
+    const y = d3.scaleLinear([1990, 2025], [H - m.b, m.t]);
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(7).tickFormat('').tickSize(-(W - m.l - m.r))).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(7).tickFormat(d3.format('d'))).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 3 : 6).tickFormat((v) => v + '°E')).attr('font-size', null).attr('font-family', null);
+    const secs = Array.from(new Set(rows.map((r) => r.sector))).sort();
+    secs.forEach((sec) => {
+      const xs = rows.filter((r) => r.sector === sec).map((r) => r.lon);
+      const cx = x((d3.min(xs) + d3.max(xs)) / 2);
+      svg.append('text').attr('x', cx).attr('y', m.t - 10).attr('text-anchor', 'middle').text(sec).style('fill', 'var(--color-fg-muted)').style('font-size', '11px');
+    });
+    [[2010, 'Sand Act'], [2014, 'Sylhet ban']].forEach(([yr, lab]) => {
+      svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(yr)).attr('y2', y(yr)).style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '4 3');
+      svg.append('text').attr('x', m.l + 4).attr('y', y(yr) - 4).text(`${yr} ${lab}`).style('fill', 'var(--color-fg-muted)').style('font-size', '10px');
+    });
+    const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+    svg.append('g').selectAll('circle').data(rows.slice().sort((a, b) => a.pit - b.pit)).join('circle')
+      .attr('cx', (r) => x(r.lon)).attr('cy', (r) => y(r.year)).attr('r', (r) => (r.pit ? 6.5 : 4.5))
+      .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.85).style('stroke', 'var(--color-panel)').style('stroke-width', 1.2).style('cursor', 'pointer')
+      .on('mousemove', (ev, r) => { const [mx, my] = d3.pointer(ev, box); tp.attr('hidden', null).html(''); tp.append('div').attr('class', 't').text(`${r.site} · ${r.sector} · ${r.year}`); tp.append('div').text(`${r.type}: ${r.river}`); tp.style('left', Math.min(W - 240, mx + 10) + 'px').style('top', Math.max(0, my - 40) + 'px'); })
+      .on('mouseleave', () => tp.attr('hidden', true))
+      .on('click', (ev, r) => { NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    const t = dash.data('spread_sector'), tb = document.querySelector('#spread-table tbody');
+    if (t.status === 'ok') tb.replaceChildren(...t.data.map((r) => { const tr = document.createElement('tr'); [r.sector, r.n, r.median, r.pit_first ?? '', r.pit_last ?? '', r.pits].forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i > 0 && i < 5) td.className = 'n'; tr.append(td); }); return tr; }));
+  }
+
+  function drawSectors() {
+    const d = dash.data('by_sector'), box = document.getElementById('sectors');
+    if (d.status !== 'ok') return;
+    box.classList.remove('dash-skeleton');
+    const sectors = Array.from(new Set(d.data.map((r) => r.sector))).sort();
+    const stack = d3.stack().keys(NF.groups).value((s, k) => (d.data.find((r) => r.sector === s[0] && r.group === k) || { n: 0 }).n);
+    const series = stack(sectors.map((s) => [s]));
+    const W = box.clientWidth, H = 300, m = { t: 8, r: 8, b: 26, l: 34 };
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const x = d3.scaleBand(sectors, [m.l, W - m.r]).padding(0.3);
+    const max = d3.max(series[series.length - 1], (p) => p[1]);
+    const y = d3.scaleLinear([0, max], [H - m.b, m.t]).nice();
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat('')).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5)).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x)).attr('font-size', null).attr('font-family', null);
+    const bw = Math.min(32, x.bandwidth());
+    const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+    series.forEach((s, i) => {
+      svg.append('g').selectAll('rect').data(s).join('rect')
+        .attr('x', (p) => x(p.data[0]) + (x.bandwidth() - bw) / 2).attr('width', bw)
+        .attr('y', (p) => y(p[1])).attr('height', (p) => Math.max(0, y(p[0]) - y(p[1])))
+        .style('fill', dash.colors[i])
+        .on('mousemove', (ev, p) => {
+          const [mx, my] = d3.pointer(ev, box);
+          tp.attr('hidden', null).text(`${p.data[0]} · ${s.key}: ${p[1] - p[0]}`);
+          tp.style('left', Math.min(W - 180, mx + 10) + 'px').style('top', (my + 10) + 'px');
+        }).on('mouseleave', () => tp.attr('hidden', true));
+    });
+  }
+
+  window.drawSeries = function () {
+    const d = dash.data('series'), r = dash.data('site_results'), box = document.getElementById('series');
+    const pick = document.getElementById('site-pick');
+    if (r.status === 'ok') {
+      if (pick.options.length !== r.data.length) {
+        pick.replaceChildren(...r.data.map((x) => new Option(`${x.site} · ${x.river}`, x.site)));
+      }
+      pick.value = NF.site;
+      const info = r.data.find((x) => x.site === NF.site);
+      const note = document.getElementById('site-note');
+      note.replaceChildren();
+      if (info) {
+        const p = document.createElement('span'); p.className = 'nf-pill'; p.style.color = NF.typeColor[info.type]; p.textContent = info.type;
+        note.append(p, document.createTextNode(` ${info.visual_onset ? 'Onset ' + info.visual_onset + '. ' : ''}${info.note}`));
+      }
+    }
+    if (d.status !== 'ok') return;
+    box.classList.remove('dash-skeleton');
+    const rows = d.data.filter((x) => x.site === NF.site).map((x) => ({ season: +x.season, flag: x.flag, water: +x.water_ha, sand: +x.sand_ha, s2w: +x.s2w_ha }));
+    const keys = [['water', 'Water'], ['sand', 'Sand and bare bed'], ['s2w', 'Baseline sand now water']];
+    const lg = document.getElementById('legend-series'); lg.replaceChildren();
+    keys.forEach(([k, lab], i) => {
+      const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px';
+      const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = dash.colors[i];
+      const t = document.createElement('span'); t.textContent = lab; s.append(sw, t); lg.append(s);
+    });
+    const W = box.clientWidth, H = 300, m = { t: 10, r: 12, b: 26, l: 44 };
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const x = d3.scaleLinear([1988, 2025], [m.l, W - m.r]);
+    const y = d3.scaleLinear([0, d3.max(rows, (q) => Math.max(q.water, q.sand, q.s2w)) || 1], [H - m.b, m.t]).nice();
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat('')).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5)).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 4 : 8).tickFormat(d3.format('d'))).attr('font-size', null).attr('font-family', null);
+    svg.append('text').attr('x', m.l + 4).attr('y', m.t + 10).text('ha').style('fill', 'var(--color-fg-muted)').style('font-size', '11px');
+    const ok = rows.filter((q) => !q.flag);
+    keys.forEach(([k], i) => {
+      svg.append('path').datum(ok).attr('d', d3.line().x((q) => x(q.season)).y((q) => y(q[k])))
+        .style('fill', 'none').style('stroke', dash.colors[i]).style('stroke-width', 2).style('stroke-linecap', 'round').style('stroke-linejoin', 'round');
+      svg.append('g').selectAll('circle').data(rows).join('circle').attr('cx', (q) => x(q.season)).attr('cy', (q) => y(q[k])).attr('r', 3)
+        .style('fill', (q) => (q.flag ? 'var(--color-panel)' : dash.colors[i])).style('stroke', dash.colors[i]).style('stroke-width', 1.2);
+    });
+    const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+    const rule = svg.append('line').style('stroke', 'var(--cds-chart-reference)').attr('y1', m.t).attr('y2', H - m.b).attr('hidden', true);
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b).style('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [mx, my] = d3.pointer(ev, box);
+        const yr = Math.round(x.invert(mx));
+        const q = rows.find((z) => z.season === yr);
+        if (!q) { tp.attr('hidden', true); rule.attr('hidden', true); return; }
+        rule.attr('hidden', null).attr('x1', x(yr)).attr('x2', x(yr));
+        tp.attr('hidden', null).html('');
+        tp.append('div').attr('class', 't').text(`Season ${yr}${q.flag ? ' · ' + q.flag + ' (excluded)' : ''}`);
+        keys.forEach(([k, lab], i) => {
+          const l = tp.append('div'); l.append('span').attr('class', 'nf-sw').style('background', dash.colors[i]).style('margin-right', '6px');
+          l.append('span').text(`${lab}: ${q[k].toFixed(1)} ha`);
+        });
+        tp.style('left', Math.min(W - 220, mx + 12) + 'px').style('top', Math.max(0, my - 60) + 'px');
+      }).on('mouseleave', () => { tp.attr('hidden', true); rule.attr('hidden', true); });
+  };
+
+  function drawClasses() {
+    const d = dash.data('class_by_sector'), box = document.getElementById('classes');
+    if (d.status !== 'ok') return;
+    box.classList.remove('dash-skeleton');
+    const keys = NF.types.filter((k) => d.data.some((r) => r.cls === k));
+    const lg = document.getElementById('legend-class'); lg.replaceChildren();
+    keys.forEach((k) => { const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px'; const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = NF.typeColor[k]; const tx = document.createElement('span'); tx.textContent = k; s.append(sw, tx); lg.append(s); });
+    const sectors = Array.from(new Set(d.data.map((r) => r.sector))).sort();
+    const series = d3.stack().keys(keys).value((s, k) => d.data.filter((r) => r.sector === s && r.cls === k).length)(sectors);
+    const W = box.clientWidth, H = 300, m = { t: 8, r: 8, b: 26, l: 30 };
+    box.replaceChildren();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const x = d3.scaleBand(sectors, [m.l, W - m.r]).padding(0.3);
+    const y = d3.scaleLinear([0, d3.max(series[series.length - 1], (p) => p[1])], [H - m.b, m.t]).nice();
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat('')).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5)).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x)).attr('font-size', null).attr('font-family', null);
+    const bw = Math.min(32, x.bandwidth());
+    const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
+    series.forEach((s) => {
+      svg.append('g').selectAll('rect').data(s).join('rect')
+        .attr('x', (p) => x(p.data) + (x.bandwidth() - bw) / 2).attr('width', bw)
+        .attr('y', (p) => y(p[1])).attr('height', (p) => Math.max(0, y(p[0]) - y(p[1])))
+        .style('fill', NF.typeColor[s.key])
+        .on('mousemove', (ev, p) => { const [mx, my] = d3.pointer(ev, box); const ids = d.data.filter((r) => r.sector === p.data && r.cls === s.key).map((r) => r.site).join(', ');
+          tp.attr('hidden', null).text(`${p.data} · ${s.key}: ${p[1] - p[0]} (${ids})`); tp.style('left', Math.min(W - 240, mx + 10) + 'px').style('top', (my + 10) + 'px'); })
+        .on('mouseleave', () => tp.attr('hidden', true));
+    });
+  }
+
+  function drawScreen() {
+    const d = dash.data('screen_table'), tb = document.querySelector('#screen-table tbody');
+    if (d.status !== 'ok') return;
+    const q = (document.getElementById('screen-q').value || '').toLowerCase();
+    const rows = d.data.filter((r) => !q || `${r.site} ${r.sector} ${r.country} ${r.status} ${r.reason}`.toLowerCase().includes(q));
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = r.site;
+      [r.site, r.sector, r.country, r.n_rec, r.status, r.reason].forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i === 3) td.className = 'n'; tr.append(td); });
+      return tr;
+    }));
+  }
+  document.getElementById('screen-q').addEventListener('input', drawScreen);
+  document.getElementById('screen-table').addEventListener('click', (ev) => {
+    const tr = ev.target.closest('tr[data-key]'); if (!tr) return;
+    const r = dash.data('site_results'); if (r.status === 'ok' && r.data.some((x) => x.site === tr.dataset.key)) { NF.site = tr.dataset.key; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.getElementById('onset-filter').addEventListener('change', () => drawOnset());
+
+  function drawTable() {
+    const d = dash.data('site_table');
+    const tb = document.querySelector('#site-table tbody');
+    if (d.status !== 'ok') return;
+    const rows = d.data.slice().sort((a, b) => a.lon - b.lon);
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = r.site;
+      const cell = (v, cls) => { const td = document.createElement('td'); td.textContent = v == null ? '' : v; if (cls) td.className = cls; return td; };
+      tr.append(cell(r.site), cell(r.sector), cell(r.river), cell(r.type), cell(r.visual_onset),
+        cell(r.water_break, 'n hide-n'), cell(r.water_p == null ? '' : r.water_p < 0.001 ? '<0.001' : r.water_p.toFixed(3), 'n hide-n'),
+        cell(r.aoi_ha == null ? '' : d3.format(',.0f')(r.aoi_ha), 'n hide-n'), cell(r.note));
+      return tr;
+    }));
+  }
+
+  document.getElementById('site-table').addEventListener('click', (ev) => {
+    const tr = ev.target.closest('tr[data-key]');
+    if (tr) { NF.site = tr.dataset.key; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.getElementById('site-pick').addEventListener('change', (ev) => { NF.site = ev.target.value; drawSeries(); });
+
+  dash.onData(() => {
+    const s = dash.data('summary');
+    if (s.status === 'ok') {
+      const v = s.data[0];
+      document.getElementById('takeaway').classList.remove('dash-skeleton');
+      document.getElementById('takeaway').textContent = v.takeaway;
+      document.querySelectorAll('[data-source="summary"][data-field]').forEach((el) => { if (el.id !== 'takeaway') el.textContent = d3.format(',')(v[el.dataset.field]); });
+    }
+    draw(); drawTimeline(); drawOnset(); drawSpread(); drawClasses(); drawSectors(); drawSeries(); drawTable(); drawScreen();
+  });
+})();
+</script>
+
+<footer class="nf-foot">
+  <div>Md Sadiul Alam Chyon, Department of Geography and Geographic Information Science, University of Illinois Urbana-Champaign. Doctoral research supervised by Jim Best. Chapter 4 of the dissertation, in preparation; results are provisional and unpublished.</div>
+  <div>Method: one clear January Landsat Collection 2 scene per dry season (1988 to 2025) at each site; water (MNDWI &gt; 0), sand (NDVI &lt; 0.25) and vegetation (NDVI &ge; 0.30) inside a fixed river outline; onset from the January panels and the Pettitt test. Rivers: HydroRIVERS v1.0. Borders: Natural Earth. Imagery: U.S. Geological Survey Landsat.</div>
+  <div>Data and code: <a href="https://github.com/sadiulchyon/northern-fringe-extraction-atlas">github.com/sadiulchyon/northern-fringe-extraction-atlas</a>. Data as of 22 October 2026.</div>
+</footer>
+</div>
+</body>
+</html>

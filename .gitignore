@@ -1,0 +1,7 @@
+# Raw Earth Engine downloads and intermediate arrays (about 1 GB; regenerate with gee/ and scripts/)
+*.bin
+*.npz
+*.npy
+*.tgz
+__pycache__/
+.DS_Store
