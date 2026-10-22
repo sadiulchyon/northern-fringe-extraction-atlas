@@ -1,6 +1,6 @@
 # Northern Fringe Extraction Atlas
 
-Sand and gravel extraction along the northern border of Bangladesh, 1988 to 2025, reconstructed at 131 sites (river reaches, stone and sand depots, land ports and sand-filled land) from one January Landsat scene per dry season.
+Sand and gravel extraction along the northern border of Bangladesh, 1988 to 2025, reconstructed at 141 sites (river reaches on both sides of the border, stone and sand depots, land ports, quarries and sand-filled land) from one January Landsat scene per dry season.
 
 **Atlas:** https://sadiulchyon.github.io/northern-fringe-extraction-atlas/
 
@@ -8,7 +8,7 @@ This repository holds the data, code and interactive atlas behind Chapter 4 of t
 
 ## What the atlas shows
 
-- **Map** of the 411 reconnaissance inventory points, the 83 site windows clustered from them and 16 added reaches, coloured by result. Click a site for its January image chips, classes and series.
+- **Map** of the 411 reconnaissance inventory points, the 83 site windows clustered from them and 58 added sites (N01 to N58), coloured by result. Click a site for its January image chips, classes and series.
 - **Year slider:** sites light up from the first January in which their low-flow series shows an extraction-type change; a strip chart counts changed sites by sector.
 - **Onset by position** along the border, with dated laws, bans and dredging works.
 - **Spread:** first year of change against longitude, with sector medians.
@@ -34,14 +34,14 @@ Limits: detection at 30 m lags the true start where pits are small (about four y
 | Floodplain pits | 10 |
 | Possible dredging | 18 |
 | Bar loss | 12 |
-| Bar vegetation | 22 |
+| Bar vegetation | 28 |
 | Depot / stockpile | 4 |
 | Land filling | 7 |
-| No signal | 43 |
+| No signal | 47 |
 
-Sites N19 to N48 (added 22 October 2026) go beyond the inventory: stone crusher and stockpile yards, land ports, quarries (including the Lafarge limestone mine in Meghalaya and the Chhatak cement plant it supplies), upstream reaches in India, and sand-filled land (economic zones, the Sylhet Hi-Tech Park, the University of Netrokona), found from Google Maps listings and imagery and run in pit-field mode, where the rise in bare ground marks the yard or the fill.
+Sites N19 to N58 (added 22 October 2026) go beyond the inventory: stone crusher and stockpile yards, land ports, quarries (including the Lafarge limestone mine in Meghalaya and the Chhatak cement plant it supplies) and sand-filled land (economic zones, the Sylhet Hi-Tech Park, the University of Netrokona), found from Google Maps listings and imagery and run in pit-field mode, where the rise in bare ground marks the yard or the fill; and reaches upstream of the border in India (Simsang, Umngot, Dhalai gorge, Teesta at Gajoldoba, Jalpaiguri and Mekhliganj, Mahananda at Siliguri) that test whether a change at the border is local. Sectors are the longitude bands S1 to S6 (88.00, 89.30, 89.92, 90.30, 90.95, 91.60, 92.55 °E).
 
-Of 48 dated extraction-type sites, 5 change before 2000, 23 in 2000 to 2009, 18 in 2010 to 2019 and 2 after 2020. Extraction began at two gravel cores, the Patgram floodplain (1998 to 2005) and the Sylhet rivers (2005 to 2006), filled the Sylhet rivers by 2013, and shifted after 2014 to the sand rivers of Sunamganj and Netrokona (Dolura 2015 to 2017, Rakti 2016, Jadukata and Someshwari 2021).
+Of 55 dated extraction-type sites, 5 change before 2000, 28 in 2000 to 2009, 18 in 2010 to 2019 and 4 after 2020. Extraction began at two gravel cores, the Patgram floodplain (1998 to 2005) and the Sylhet rivers (2005 to 2006), filled the Sylhet rivers by 2013, and shifted after 2014 to the sand rivers of Sunamganj and Netrokona (Dolura 2015 to 2017, Rakti 2016, Jadukata and Someshwari 2021, Someshwari below Durgapur 2023 to 2025). Reaches above the border (Simsang, Dhalai gorge) stay flat while the reaches below them convert, so the onsets date work at the border. On the Teesta, bars vegetate in 2011 to 2016 above and below the border alike, so that change is river-wide and not extraction. Four depots and yards date from 1999 to 2005 (gravel decade) and seven sand fills, six of them from 2014 on (sand decade).
 
 ## Repository layout
 
@@ -52,7 +52,7 @@ Of 48 dated extraction-type sites, 5 change before 2000, 23 in 2000 to 2009, 18 
 | `gee/corridor_rf_superseded/` | Earlier corridor-wide random-forest pipeline (scripts 01 to 08), set aside because it recorded bare ground rather than extraction |
 | `scripts/` | Python and shell pipeline (below) |
 | `inventory_411_sectors.csv` | The 411 inventory points with sector and distance to the border |
-| `sites/sites_v1.csv`, `.geojson` | The 83 site windows; `sites_extra.csv` the added reaches N01 to N18 |
+| `sites/sites_v1.csv`, `.geojson` | The 83 site windows; `sites_extra.csv` the added sites N01 to N58 |
 | `sites/lowflow/` | Per-site January series (`SITE_series.csv`), panels (`SITE_panel.png`), pit-field flags (`SITE_mode.txt`) and the Pettitt table (`onset_summary.csv`) |
 | `maps/dash/` | Source tables for the atlas; `site_results.csv` is the authoritative list of result classes and visual onsets |
 | `maps/ch4_inventory_sites.kml` | Inventory points and site windows for Google Earth |

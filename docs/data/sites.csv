@@ -83,19 +83,19 @@ E081,1,92.15884,24.86091,1500,0,S6,BGD,Sylhet,6.1,0–10 km,Minor,,2019,5,,92.15
 E082,1,92.21585,24.95918,1500,0,S6,BGD,Sylhet,7.2,0–10 km,Minor,,2022,286,,92.20842,92.22328,24.9524,24.96595
 E083,1,92.30645,25.05036,1500,0,S6,BGD,Sylhet,1.6,0–10 km,Moderate,,2022,285,,92.29902,92.31389,25.04359,25.05714
 N01,0,91.25,25.2,3500,,S5,BGD,Sylhet,,,,,,,Jadukata at Laurergarh (Tahirpur),91.23263,91.26737,25.18428,25.21572
-N02,0,89.515,25.935,3500,,S1,BGD,Rangpur,,,,,,,Dharla at Kurigram bridge,89.49752,89.53248,25.91928,25.95072
-N03,0,89.47,25.995,3500,,S1,BGD,Rangpur,,,,,,,Dharla at Mogolhat,89.45251,89.48749,25.97928,26.01072
+N02,0,89.515,25.935,3500,,S2,BGD,Rangpur,,,,,,,Dharla at Kurigram bridge,89.49752,89.53248,25.91928,25.95072
+N03,0,89.47,25.995,3500,,S2,BGD,Rangpur,,,,,,,Dharla at Mogolhat,89.45251,89.48749,25.97928,26.01072
 N04,0,91.754,25.169,3000,,S6,BGD,Sylhet,,,,,,,Dhalai at Bholaganj (Sada Pathor),91.73911,91.76889,25.15553,25.18247
-N05,0,90.663,25.135,4000,,S5,BGD,Mymensingh,,,,,,,Someshwari at Durgapur (check on Chapter 6),90.64315,90.68285,25.11703,25.15297
+N05,0,90.663,25.135,4000,,S4,BGD,Mymensingh,,,,,,,Someshwari at Durgapur (check on Chapter 6),90.64315,90.68285,25.11703,25.15297
 N06,0,91.755,25.125,4000,,S6,BGD,Sylhet,,,,,,,Dhalai below Bholaganj (Companiganj),91.73516,91.77484,25.10703,25.14297
-N07,0,90.659,25.172,3500,,S5,BGD,Mymensingh,,,,,,,Someshwari at Bijoypur (above Durgapur),90.64163,90.67637,25.15628,25.18772
+N07,0,90.659,25.172,3500,,S4,BGD,Mymensingh,,,,,,,Someshwari at Bijoypur (above Durgapur),90.64163,90.67637,25.15628,25.18772
 N08,0,91.236,25.14,3500,,S5,BGD,Sylhet,,,,,,,Jadukata-Rakti confluence (Miyarchor),91.21863,91.25337,25.12428,25.15572
 N09,0,91.272,25.122,3500,,S5,BGD,Sylhet,,,,,,,Rakti at Shaktiarkhola (Tahirpur),91.25464,91.28936,25.10628,25.13772
 N10,0,88.41,26.63,3500,,S1,BGD,Rangpur,,,,,,,Mahananda at Banglabandha,88.39241,88.42759,26.61428,26.64572
-N11,0,91.665,25.11,3500,,S5,BGD,Sylhet,,,,,,,Chela below the border (Dowarabazar),91.64764,91.68236,25.09428,25.12572
-N13,0,89.65,26.205,3500,,S1,BGD,Rangpur,,,,,,,Dudhkumar at Balabhut (Bhurungamari),89.63248,89.66752,26.18928,26.22072
+N11,0,91.665,25.11,3500,,S6,BGD,Sylhet,,,,,,,Chela below the border (Dowarabazar),91.64764,91.68236,25.09428,25.12572
+N13,0,89.65,26.205,3500,,S2,BGD,Rangpur,,,,,,,Dudhkumar at Balabhut (Bhurungamari),89.63248,89.66752,26.18928,26.22072
 N14,0,91.07,25.183,4000,,S5,BGD,Sylhet,,,,,,,Bagli border streams (Tahirpur),91.05015,91.08985,25.16503,25.20097
-N12,0,90.89,25.158,3500,,S5,BGD,Mymensingh,,,,,,,Mahadeo at Patlaban (Kalmakanda),90.87263,90.90737,25.14228,25.17372
+N12,0,90.89,25.158,3500,,S4,BGD,Mymensingh,,,,,,,Mahadeo at Patlaban (Kalmakanda),90.87263,90.90737,25.14228,25.17372
 N15,0,91.632,25.163,3500,,S6,IND,Meghalaya,,,,,,,Chela (Umiam) above the border at Dalia–Kalatek (India),91.61463,91.64937,25.14728,25.17872
 N17,0,88.975,26.225,4000,,S1,BGD,Rangpur,,,,,,,"Teesta entry at Khoga Kharibari, Dimla (braided control above the barrage)",88.95497,88.99503,26.20703,26.24297
 N16,0,91.39,25.183,3500,,S5,IND,Meghalaya,,,,,,,"Dolura river sand fan above the border at Balat–Khakorkora (India); first window too far west, rerun",91.37263,91.40737,25.16728,25.19872
@@ -130,3 +130,13 @@ N45,0,90.645,25.198,3500,,S4,IND,Meghalaya,,,,,,,Simsang (upper Someshwari) at B
 N46,0,89.255,25.873,3500,,S1,BGD,Rangpur,,,,,,,Teesta at the Mahipur bridge (Gangachara),89.23753,89.27247,25.85728,25.88872
 N47,0,91.771,25.158,2000,,S6,BGD,Sylhet,,,,,,,Kalairag stone yards on the Dhalai east bank (Bholaganj),91.76108,91.78092,25.14902,25.16698
 N48,0,89.935,24.965,3500,,S3,BGD,Mymensingh,,,,,,,Old Brahmaputra above Jamalpur town,89.91766,89.95234,24.94928,24.98072
+N49,0,88.405,26.665,3000,,S1,IND,West Bengal,,,,,,,Mahananda at Siliguri-Fulbari (India),88.38992,88.42008,26.65153,26.67847
+N50,0,88.59,26.74,4000,,S1,IND,West Bengal,,,,,,,Teesta below the Gajoldoba barrage (India),88.56988,88.61012,26.72203,26.75797
+N51,0,88.75,26.52,4000,,S1,IND,West Bengal,,,,,,,Teesta at Jalpaiguri (India),88.72992,88.77008,26.50203,26.53797
+N52,0,88.875,26.315,4000,,S1,IND,West Bengal,,,,,,,Teesta at Mekhliganj (India),88.85496,88.89504,26.29703,26.33297
+N53,0,89.055,26.17,4000,,S1,BGD,Rangpur,,,,,,,Teesta Barrage at Dalia,89.03498,89.07502,26.15203,26.18797
+N54,0,89.665,25.795,4000,,S2,BGD,Rangpur,,,,,,,Dharla below the Kurigram bridge,89.64505,89.68495,25.77703,25.81297
+N55,0,91.768,25.208,3000,,S6,IND,Meghalaya,,,,,,,Dhalai (Umiam) gorge above Bholaganj (India),91.75311,91.78289,25.19453,25.22147
+N56,0,91.87,24.887,3500,,S6,BGD,Sylhet,,,,,,,Surma at Sylhet city,91.85267,91.88733,24.87128,24.90272
+N57,0,91.425,25.08,3500,,S5,BGD,Sylhet,,,,,,,Surma at Sunamganj town,91.40764,91.44236,25.06428,25.09572
+N58,0,91.676,25.137,2000,,S6,BGD,Sylhet,,,,,,,Ichamati border fan (Companiganj),91.66608,91.68592,25.12802,25.14598

@@ -7,15 +7,16 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import os
-W=os.path.join(os.path.dirname(__file__),'..','..','maps','dash'); OUT=os.path.join(os.path.dirname(__file__),'..')
+W=os.path.join(os.path.dirname(__file__),'..','..','working','maps','dash'); OUT=os.path.join(os.path.dirname(__file__),'..')
 plt.rcParams.update({"font.family":"Liberation Sans","font.size":7,"axes.linewidth":0.5,"axes.edgecolor":"#777777","xtick.color":"#444444","ytick.color":"#444444"})
 INK="#222222"; MUTED="#666666"
-CLS=[('Pit extraction','#b2182b','o'),('Floodplain pits','#e08214','s'),('Possible dredging','#2166ac','D'),('Bar loss','#762a83','^'),('Bar vegetation','#4d9221','v'),('No signal','#ffffff','o')]
+CLS=[('Pit extraction','#b2182b','o'),('Floodplain pits','#e08214','s'),('Possible dredging','#2166ac','D'),('Bar loss','#762a83','^'),('Bar vegetation','#4d9221','v'),('Depot / stockpile','#a6761d','P'),('Land filling','#d6438f','X'),('No signal','#ffffff','o')]
+EXT=('Pit extraction','Floodplain pits','Possible dredging','Bar loss'); SUP=('Depot / stockpile','Land filling')
 COL={c:k for c,k,_ in CLS}; MK={c:m for c,_,m in CLS}
 res={r['site']:r for r in csv.DictReader(open(f'{W}/site_results.csv'))}
 sites={r['site_id']:r for r in csv.DictReader(open(f'{W}/sites.csv')) if r['site_id'] in res}
 inv=list(csv.DictReader(open(f'{W}/inventory.csv')))
-countries=json.load(open(f'{W}/countries.json')); rivers=json.load(open(f'{W}/rivers.json'))
+countries=json.load(open(f'{W}/atlas_source/countries.json')); rivers=json.load(open(f'{W}/atlas_source/rivers.json'))
 def xy(s): return zip(*[tuple(map(float,p.split(','))) for p in s.split(';')])
 # ---------- Figure A: map ----------
 fig,ax=plt.subplots(figsize=(6.7,3.6),dpi=300)
@@ -32,25 +33,24 @@ for cls,col,mk in CLS:
 # sector extents from site longitudes
 sec=defaultdict(list)
 for s,r in sites.items(): sec[r['sector']].append(float(r['lon']))
-for k in sorted(sec):
-    lo,hi=min(sec[k])-0.05,max(sec[k])+0.05
-    ax.add_patch(Rectangle((lo,24.72),hi-lo,0.1,color='#555555',lw=0)); ax.text((lo+hi)/2,24.84 if k!='S3' else 24.93,k,ha='center',va='bottom',fontsize=6.5,color=INK)
+BANDS={'S1':(88.30,89.30),'S2':(89.30,89.92),'S3':(89.92,90.30),'S4':(90.30,90.95),'S5':(90.95,91.60),'S6':(91.60,92.40)}
+for k,(lo,hi) in BANDS.items():
+    ax.add_patch(Rectangle((lo+0.01,24.44),hi-lo-0.02,0.07,color='#555555',lw=0)); ax.text((lo+hi)/2,24.525,k,ha='center',va='bottom',fontsize=6.5,color=INK)
 for nm,x,y in [('Teesta',89.22,25.92),('Brahmaputra',90.25,26.18),('Old Brahmaputra',90.35,25.0),('Surma',91.62,25.03),('Kushiyara',91.72,24.66),('Mahananda',88.32,25.85)]:
     ax.text(x,y,nm,fontsize=5.5,color='#4a7fa5',style='italic',ha='center')
-ax.text(88.35,25.2,'INDIA',fontsize=7,color=MUTED); ax.text(91.5,25.62,'INDIA (Meghalaya)',fontsize=7,color=MUTED); ax.text(89.9,25.3,'BANGLADESH',fontsize=7,color=MUTED)
-ax.set_xlim(88.2,92.5); ax.set_ylim(24.7,26.7); ax.set_aspect(1/0.9)
+ax.text(89.4,26.62,'INDIA',fontsize=7,color=MUTED); ax.text(91.5,25.62,'INDIA (Meghalaya)',fontsize=7,color=MUTED); ax.text(89.9,25.3,'BANGLADESH',fontsize=7,color=MUTED)
+ax.set_xlim(88.2,92.5); ax.set_ylim(24.41,26.85); ax.set_aspect(1/0.9)
 ax.set_xlabel('Longitude (°E)'); ax.set_ylabel('Latitude (°N)')
-ax.legend(loc='lower left',bbox_to_anchor=(0.005,0.12),fontsize=6,frameon=True,framealpha=0.95,edgecolor='#cccccc',handletextpad=0.3,borderpad=0.4,title='Result at the 99 analysed sites',title_fontsize=6)
+ax.legend(loc='lower left',bbox_to_anchor=(0.005,0.12),fontsize=6,frameon=True,framealpha=0.95,edgecolor='#cccccc',handletextpad=0.3,borderpad=0.4,title=f'Result at the {len(sites)} analysed sites',title_fontsize=6)
 fig.tight_layout(); fig.savefig(f'{OUT}/fig4_sites_map.png'); plt.close(fig)
 # ---------- Figure B: onset and spread ----------
 rows=[]
 for s,r in res.items():
     m=re.search(r'(19|20)\d\d',r['visual_onset'])
     if m: rows.append((float(sites[s]['lon']),int(m.group(0)),r['type'],sites[s]['sector'],s))
-fig,(a1,a2)=plt.subplots(1,2,figsize=(6.7,2.9),dpi=300,gridspec_kw={'width_ratios':[2,1.15]})
-for k in sorted(sec):
-    lo,hi=min(sec[k])-0.04,max(sec[k])+0.04
-    a1.axvspan(lo,hi,color='#f3f3f3' if k in('S1','S3','S5') else '#e9e9e9',lw=0,zorder=0); a1.text((lo+hi)/2,2026.3 if k!='S3' else 2024.3,k,ha='center',fontsize=6.5,color=INK)
+fig,(a1,a2)=plt.subplots(1,2,figsize=(6.7,3.3),dpi=300,gridspec_kw={'width_ratios':[2,1.15]})
+for k,(lo,hi) in BANDS.items():
+    a1.axvspan(lo,hi,color='#f3f3f3' if k in('S1','S3','S5') else '#e6e6e6',lw=0,zorder=0); a1.text((lo+hi)/2,2026.0,k,ha='center',fontsize=6.5,color=INK)
 for y,lab in [(2010,'2010 Act'),(2014,'2014 Sylhet ban'),(2020,'2020 lease ban')]:
     a1.axhline(y,color='#bbbbbb',lw=0.5,ls=(0,(3,2)),zorder=1); a1.text(88.25,y+0.3,lab,ha='left',fontsize=5.2,color=MUTED)
 for cls,col,mk in CLS:
@@ -59,26 +59,27 @@ for cls,col,mk in CLS:
     a1.scatter([p[0] for p in pts],[p[1] for p in pts],s=15,c=col,marker=mk,edgecolors=INK,linewidths=0.35,zorder=5,label=cls)
 # sector medians for extraction-type classes (excluding bar vegetation)
 for k in sorted(sec):
-    ys=[y for x,y,c,sc,_ in rows if sc==k and c!='Bar vegetation']
+    ys=[y for x,y,c,sc,_ in rows if sc==k and c in EXT]
     if ys:
-        lo,hi=min(sec[k]),max(sec[k]); med=st.median(ys)
+        lo,hi=BANDS[k]; lo+=0.04; hi-=0.06; med=st.median(ys)
         a1.plot([lo-0.02,hi+0.02],[med,med],color=INK,lw=1.1,zorder=6); a1.text(hi+0.03,med,f'{med:.0f}'.replace('.0',''),fontsize=5.5,va='center',color=INK)
 a1.set_xlim(88.2,92.5); a1.set_ylim(1993,2027); a1.set_xlabel('Longitude (°E), west to east along the border'); a1.set_ylabel('First year of change (visual onset)')
-a1.legend(fontsize=5.4,loc='lower left',frameon=True,framealpha=0.95,edgecolor='#cccccc',handletextpad=0.3,ncol=1)
+a1.legend(fontsize=5.4,loc='upper center',bbox_to_anchor=(0.5,-0.17),frameon=False,handletextpad=0.2,columnspacing=0.8,ncol=4)
 a1.text(0.01,0.985,'(a)',transform=a1.transAxes,fontsize=8,fontweight='bold',va='top')
 # panel b: cumulative number of sites with a detected change (extraction-type classes), by sector
-secs=['S1','S2','S3','S5','S6']; yrs_ax=list(range(1994,2026))
-styles={'S1':('#222222','-'),'S2':('#888888','--'),'S3':('#888888',':'),'S5':('#b2182b','-'),'S6':('#2166ac','-')}
+secs=['S1','S2','S3','S4','S5','S6']; yrs_ax=list(range(1994,2026))
+styles={'S1':('#222222','-'),'S2':('#888888','--'),'S3':('#888888',':'),'S4':('#e08214','-'),'S5':('#b2182b','-'),'S6':('#2166ac','-')}
 for k in secs:
-    ys=[y for x,y,c,sc,_ in rows if sc==k and c!='Bar vegetation']
+    ys=[y for x,y,c,sc,_ in rows if sc==k and c in EXT]
     cum=[sum(1 for y in ys if y<=t) for t in yrs_ax]
     col,ls=styles[k]; a2.plot(yrs_ax,cum,color=col,ls=ls,lw=1.1,label=f'{k} (n = {len(ys)})')
+ys=[y for x,y,c,sc,_ in rows if c in SUP]; a2.plot(yrs_ax,[sum(1 for y in ys if y<=t) for t in yrs_ax],color='#d6438f',ls=(0,(4,1.5)),lw=1.1,label=f'Depots and fill, all (n = {len(ys)})')
 for y in (2010,2014,2020): a2.axvline(y,color='#bbbbbb',lw=0.5,ls=(0,(3,2)),zorder=0)
 a2.set_xlim(1994,2025); a2.set_ylabel('Sites with detected change (cumulative)'); a2.set_xlabel('Dry season')
-a2.spines[['top','right']].set_visible(False); a2.legend(fontsize=5.4,frameon=False,loc='lower right')
+a2.spines[['top','right']].set_visible(False); a2.legend(fontsize=5.2,frameon=False,loc='upper left',bbox_to_anchor=(0.0,0.93)); a2.yaxis.get_major_locator().set_params(integer=True)
 a2.text(0.02,0.985,'(b)',transform=a2.transAxes,fontsize=8,fontweight='bold',va='top')
 fig.tight_layout(); fig.savefig(f'{OUT}/fig4_onset_spread.png'); plt.close(fig)
 # ---------- numbers for the text ----------
 print('classes',Counter(r['type'] for r in res.values()))
 for k in secs:
-    ys=sorted(y for x,y,c,sc,_ in rows if sc==k and c!='Bar vegetation'); print(k,len(ys),ys and st.median(ys),ys)
+    ys=sorted(y for x,y,c,sc,_ in rows if sc==k and c in EXT); print(k,len(ys),ys and st.median(ys),ys)

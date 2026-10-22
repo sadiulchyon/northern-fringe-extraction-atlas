@@ -1,15 +1,15 @@
 # Chapter 4: development of extraction across the belt, west to east: ten sites x six Januaries (true colour, water overlay).
 import csv, textwrap, numpy as np, matplotlib, os; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-H=os.path.dirname(os.path.abspath(__file__)); WK=os.path.join(H,'..','..'); OUT=os.path.join(H,'..')
+H=os.path.dirname(os.path.abspath(__file__)); WK=os.path.join(H,'..','..','working'); OUT=os.path.join(H,'..')
 plt.rcParams.update({"font.family":"Liberation Sans","font.size":6.5})
 SITES=[('E013','Patgram floodplain (S1)','floodplain pits 2005'),
        ('E008','Mahananda, Tetulia (S1)','Pits 1999'),
        ('E046','Old Brahmaputra (S3)','Dredging 2019'),
-       ('N05','Someshwari, Durgapur (S5)','Pits 2021'),
+       ('N05','Someshwari, Durgapur (S4)','Pits 2021'),
        ('N01','Jadukata fan (S5)','Pits 2007 / 2021'),
        ('E060','Dolura border river (S5)','Pits 2015'),
-       ('N11','Chela (S5)','Pits 2007'),
+       ('N11','Chela (S6)','Pits 2007'),
        ('N04','Dhalai, Bholaganj (S6)','Pits 2005'),
        ('E076','Piyain, Jaflong (S6)','Pits 2012'),
        ('E083','Lubha (S6)','Pits 2013')]
