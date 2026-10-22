@@ -174,7 +174,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 
   <section class="nf-card" id="timeline-card">
     <h2>Where extraction had begun, year by year</h2>
-    <div class="note">Drag the slider or press Play. A site lights up in its result colour from the first January in which the low-flow series shows an extraction-type change (pits, floodplain pits, possible dredging or bar loss); sites that changed within the two seasons before the chosen year carry a dark ring. Hollow markers are dated sites that have not yet changed; faint dots are sites with no dated extraction signal. Bar-vegetation sites (char cropping) are not extraction and stay faint. Click a lit site to open its series below.</div>
+    <div class="note">Drag the slider or press Play. A site lights up in its result colour from the first January in which the low-flow series shows an extraction-type change (pits, floodplain pits, possible dredging or bar loss); sites that changed within the two seasons before the chosen year carry a dark ring. Squares are depots, stockpile yards and sand-filled land. Hollow markers are dated sites that have not yet changed; faint dots are sites with no dated extraction signal. Bar-vegetation sites (char cropping) are not extraction and stay faint. Click a lit site to open its series below.</div>
     <div class="nf-ctl nf-tlctl">
       <button type="button" id="tl-play" class="nf-btn" aria-label="Play through the years">Play</button>
       <label for="tl-year">Season</label>
@@ -261,13 +261,15 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 <script>
 window.NF = {
   groups: ['Sand Mining', 'Other extraction', 'Deposit/depot', 'Vessels', 'River/floodplain', 'Named feature', 'Uncertain label'],
-  types: ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss', 'Bar vegetation', 'No signal', 'Skipped'],
+  types: ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss', 'Bar vegetation', 'Depot / stockpile', 'Land filling', 'No signal', 'Skipped'],
   typeColor: {
     'Pit extraction': 'var(--cds-chart-status-critical)',
     'Floodplain pits': 'var(--nf-fpit)',
     'Possible dredging': 'var(--color-warn)',
     'Bar loss': 'var(--color-fg)',
     'Bar vegetation': 'var(--color-ok)',
+    'Depot / stockpile': '#a6761d',
+    'Land filling': '#d6438f',
     'No signal': 'var(--cds-chart-muted)',
     'Skipped': 'var(--cds-chart-muted)',
     'Not yet run': 'var(--color-border-line)'
@@ -341,12 +343,13 @@ dash.calc('spread', {
 
 dash.calc('onset_map', {
   title: 'First year of change per site',
-  description: 'For each analysed site: its position, result class and the first year of its visual onset (null where the class is not an extraction-type change or no year is given).',
+  description: 'For each analysed site: its position, result class, kind (extraction; supply = depot, stockpile or land filling) and the first year of its visual onset (null where the class is neither or no year is given).',
   inputs: ['site_table'],
   fn: (site_table) => site_table.filter((r) => Number.isFinite(r.slon) && Number.isFinite(r.slat)).map((r) => {
     const ext = ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'].includes(r.type);
+    const sup = ['Depot / stockpile', 'Land filling'].includes(r.type);
     const m = String(r.visual_onset || '').match(/\d{4}/);
-    return { site: r.site, sector: r.sector, lon: r.slon, lat: r.slat, river: r.river, type: r.type, visual_onset: r.visual_onset, year: ext && m ? Number(m[0]) : null };
+    return { site: r.site, sector: r.sector, lon: r.slon, lat: r.slat, river: r.river, type: r.type, visual_onset: r.visual_onset, kind: ext ? 'extraction' : sup ? 'supply' : 'other', year: (ext || sup) && m ? Number(m[0]) : null };
   })
 });
 
@@ -373,7 +376,7 @@ dash.calc('summary', {
     const lo = Math.min(...firstYears), hi = Math.max(...firstYears);
     return [{
       points: inventory.length, sites: sites.filter((s) => s.site_id[0] === 'E').length, analysed: site_results.length, pit: pit.length,
-      takeaway: `${site_results.length} river sites analysed along the northern border: ${site_results.filter((r) => r.site[0] === 'E').length} clustered from the inventory and ${site_results.filter((r) => r.site[0] === 'N').length} reaches added from news reports and screening. ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`
+      takeaway: `${site_results.length} sites analysed along the northern border: ${site_results.filter((r) => r.site[0] === 'E').length} clustered from the inventory and ${site_results.filter((r) => r.site[0] === 'N').length} added from news reports, Google Maps and satellite screening (river reaches, depots, land ports and sand-filled land). ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`
     }];
   }
 });
@@ -643,7 +646,7 @@ dash.calc('summary', {
       [['INDIA', 88.6, 25.3], ['BANGLADESH', 90.0, 25.3], ['INDIA', 91.6, 25.62]].forEach(([t, lo, la]) => labs.append('text').attr('x', X(lo)).attr('y', Y(la)).attr('text-anchor', 'middle').text(t).style('fill', 'var(--color-fg-muted)').style('font-size', '10px').style('letter-spacing', '0.14em'));
       const undated = rows.filter((r) => r.year == null), dated = rows.filter((r) => r.year != null);
       svg.append('g').selectAll('circle').data(undated).join('circle').attr('cx', (r) => X(r.lon)).attr('cy', (r) => Y(r.lat)).attr('r', 2.5).style('fill', 'var(--cds-chart-muted)').style('fill-opacity', 0.5).style('stroke', 'none');
-      const sym = d3.symbol(d3.symbolDiamond, 110);
+      const sym = (r) => d3.symbol(r.kind === 'supply' ? d3.symbolSquare : d3.symbolDiamond, r.kind === 'supply' ? 80 : 110)();
       const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
       const mk = svg.append('g').selectAll('path').data(dated).join('path').attr('class', 'nf-tlmk').attr('d', sym).attr('transform', (r) => `translate(${X(r.lon)},${Y(r.lat)})`)
         .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => `${r.site}, ${r.type}, first change ${r.year}`)
@@ -656,10 +659,11 @@ dash.calc('summary', {
       const cw = W, chh = 110, m = { l: 34, r: 10, t: 8, b: 22 };
       const cs = d3.select(cbox).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${cw} ${chh}`).attr('height', chh).style('display', 'block');
       const xs = d3.scaleLinear([1988, 2025], [m.l, cw - m.r]);
-      const secs = Array.from(new Set(dated.map((r) => r.sector))).sort();
+      const exd = dated.filter((r) => r.kind === 'extraction');
+      const secs = Array.from(new Set(exd.map((r) => r.sector))).sort();
       const years = d3.range(1988, 2026);
-      const cum = secs.map((sec, i) => ({ sec, i, pts: years.map((y) => ({ y, n: dated.filter((r) => r.sector === sec && r.year <= y).length })) }));
-      const tot = years.map((y) => ({ y, n: dated.filter((r) => r.year <= y).length }));
+      const cum = secs.map((sec, i) => ({ sec, i, pts: years.map((y) => ({ y, n: exd.filter((r) => r.sector === sec && r.year <= y).length })) }));
+      const tot = years.map((y) => ({ y, n: exd.filter((r) => r.year <= y).length }));
       const ys = d3.scaleLinear([0, d3.max(tot, (p) => p.n) || 1], [chh - m.b, m.t]).nice();
       cs.append('g').attr('class', 'grid').call(d3.axisLeft(ys).ticks(3).tickSize(-(cw - m.l - m.r)).tickFormat('')).attr('transform', `translate(${m.l},0)`);
       cs.append('g').attr('class', 'axis').attr('transform', `translate(0,${chh - m.b})`).call(d3.axisBottom(xs).ticks(8).tickFormat(d3.format('d')).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
@@ -684,9 +688,10 @@ dash.calc('summary', {
           .style('opacity', (r) => (r.year <= year ? 1 : 0.7))
           .attr('transform', (r) => `translate(${X(r.lon)},${Y(r.lat)}) scale(${r.year <= year ? 1 : 0.7})`);
         cur.attr('x1', xs(year)).attr('x2', xs(year)); curT.attr('x', xs(year) + 4).text(year);
-        const on = dated.filter((r) => r.year <= year), fresh = on.filter((r) => year - r.year <= 2);
-        const bySec = secs.map((sec) => `${sec} ${on.filter((r) => r.sector === sec).length}`).join(', ');
-        read.textContent = `By the January ${year} scene, ${on.length} of ${dated.length} dated sites show an extraction-type change (${bySec}).` + (fresh.length ? ` New in ${year - 2} to ${year}: ${fresh.map((r) => `${r.site} ${r.river}`).join('; ')}.` : '');
+        const on = exd.filter((r) => r.year <= year), fresh = dated.filter((r) => r.year <= year && year - r.year <= 2);
+        const supAll = dated.filter((r) => r.kind === 'supply'), supOn = supAll.filter((r) => r.year <= year);
+        const bySec = secs.map((sec) => `${sec} ${on.filter((r) => r.sector === sec).length}`).filter((t) => !/ 0$/.test(t)).join(', ');
+        read.textContent = `By the January ${year} scene, ${on.length} of ${exd.length} dated sites show an extraction-type change (${bySec})` + (supAll.length ? `, and ${supOn.length} of ${supAll.length} depot or land-filling sites are in use.` : '.') + (fresh.length ? ` New in ${year - 2} to ${year}: ${fresh.map((r) => `${r.site} ${r.river}`).join('; ')}.` : '');
       } };
     }
     NF.tl.update(NF.year);

@@ -1,6 +1,6 @@
 # Northern Fringe Extraction Atlas
 
-Sand and gravel extraction along the northern border of Bangladesh, 1988 to 2025, reconstructed at 99 river sites from one January Landsat scene per dry season.
+Sand and gravel extraction along the northern border of Bangladesh, 1988 to 2025, reconstructed at 121 sites (river reaches, stone and sand depots, land ports and sand-filled land) from one January Landsat scene per dry season.
 
 **Atlas:** https://sadiulchyon.github.io/northern-fringe-extraction-atlas/
 
@@ -22,7 +22,7 @@ This repository holds the data, code and interactive atlas behind Chapter 4 of t
 3. **Outline.** Pixels that are water or bare in at least 40% of usable Januaries, in components within 300 m of the site's records (largest component for added reaches), buffered by 100 m. Floodplain pit fields in S1 use the whole window ("pit-field mode").
 4. **Classes.** Water MNDWI > 0; sand NDVI < 0.25 and not water; vegetation NDVI ≥ 0.30. Hazy, partial (< 80% clear) and one-season outlier scenes are flagged and excluded from statistics.
 5. **Onset.** Pettitt change point on water, sand and baseline-sand-now-water areas, plus a visual onset read from the January panels and the first-conversion map.
-6. **Result classes.** Pit extraction; floodplain pits; possible dredging (water rises as bars go, no pit pattern); bar loss; bar vegetation (char cropping, not extraction); no signal.
+6. **Result classes.** Pit extraction; floodplain pits; possible dredging (water rises as bars go, no pit pattern); bar loss; bar vegetation (char cropping, not extraction); depot or stockpile (bare yards); land filling (sand fill for development); no signal.
 
 Limits: detection at 30 m lags the true start where pits are small (about four years on the Someshwari); a sand step between the 2013 and 2014 seasons at some S1 sites may come from the Landsat 7 to 8 change; most sites have no gauge, so stage is controlled only by the January date.
 
@@ -30,12 +30,16 @@ Limits: detection at 30 m lags the true start where pits are small (about four y
 
 | Class | Sites |
 |---|---|
-| Pit extraction | 11 |
+| Pit extraction | 14 |
 | Floodplain pits | 9 |
-| Possible dredging | 16 |
+| Possible dredging | 18 |
 | Bar loss | 12 |
-| Bar vegetation | 19 |
-| No signal | 32 |
+| Bar vegetation | 20 |
+| Depot / stockpile | 3 |
+| Land filling | 5 |
+| No signal | 40 |
+
+Sites N19 to N38 (added 22 October 2026) go beyond the inventory: stone crusher and stockpile yards, land ports, quarries and sand-filled land (economic zones, the Sylhet Hi-Tech Park), found from Google Maps listings and imagery and run in pit-field mode, where the rise in bare ground marks the yard or the fill.
 
 Of 48 dated extraction-type sites, 5 change before 2000, 23 in 2000 to 2009, 18 in 2010 to 2019 and 2 after 2020. Extraction began at two gravel cores, the Patgram floodplain (1998 to 2005) and the Sylhet rivers (2005 to 2006), filled the Sylhet rivers by 2013, and shifted after 2014 to the sand rivers of Sunamganj and Netrokona (Dolura 2015 to 2017, Rakti 2016, Jadukata and Someshwari 2021).
 
