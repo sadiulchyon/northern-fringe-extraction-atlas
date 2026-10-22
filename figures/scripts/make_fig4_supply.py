@@ -3,7 +3,8 @@ import csv, textwrap, numpy as np, matplotlib, os; matplotlib.use('Agg'); import
 from matplotlib.colors import ListedColormap
 H=os.path.dirname(os.path.abspath(__file__)); WK=os.path.join(H,'..','..','working'); OUT=os.path.join(H,'..')
 plt.rcParams.update({"font.family":"Liberation Sans","font.size":6.5})
-SITES=[('N39','Lafarge limestone mine, Nongtrai, India (S6)','Quarry 2004'),
+SITES=[('N65','Lumshnong limestone quarries, India (S6)','Quarry 2004'),
+       ('N39','Lafarge limestone mine, Nongtrai, India (S6)','Quarry 2004'),
        ('N42','Chhatak cement plant and limestone yard (S6)','Yard 2001'),
        ('N23','Bholaganj crusher yards (S6)','Yards 2005'),
        ('N32','Sonahat land port yards (S2)','Yards 2018'),
@@ -11,7 +12,7 @@ SITES=[('N39','Lafarge limestone mine, Nongtrai, India (S6)','Quarry 2004'),
        ('N21','Sylhet Hi-Tech Park (S6)','Fill 2018'),
        ('N28','Jamalpur Economic Zone (S3)','Fill 2018')]
 YRS=[1996,2002,2008,2014,2019,2024]
-fig,axes_all=plt.subplots(len(SITES),len(YRS)+1,figsize=(6.7,7.6),dpi=300,gridspec_kw={'wspace':0.04,'hspace':0.06,'width_ratios':[0.85]+[1]*len(YRS)})
+fig,axes_all=plt.subplots(len(SITES),len(YRS)+1,figsize=(6.7,8.6),dpi=300,gridspec_kw={'wspace':0.04,'hspace':0.06,'width_ratios':[0.85]+[1]*len(YRS)})
 axes=axes_all[:,1:]
 for a in axes_all[:,0]: a.axis('off')
 for i,(sid,name,lab) in enumerate(SITES):
