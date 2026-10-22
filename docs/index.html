@@ -67,7 +67,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   const fire = () => { Object.keys(memo).forEach((k) => delete memo[k]); cbs.forEach((f) => { try { f(); } catch (e) { console.error(e); } }); };
   let left = Object.keys(FILES).length;
   Object.entries(FILES).forEach(([id, [url, kind]]) => {
-    fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return kind === 'csv' ? r.text() : r.json(); })
+    fetch(url, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return kind === 'csv' ? r.text() : r.json(); })
       .then((v) => { if (kind === 'csv') { const rows = d3.csvParse(v); store[id] = { status: 'ok', data: rows, columns: rows.columns }; } else store[id] = { status: 'ok', data: v, columns: Object.keys(v[0] || {}) }; })
       .catch((e) => { console.error(e); store[id] = { status: 'error', data: [], message: String(e) }; })
       .finally(() => { left -= 1; if (left === 0 || ['site_results', 'sites', 'onset', 'inventory'].includes(id)) fire(); });
