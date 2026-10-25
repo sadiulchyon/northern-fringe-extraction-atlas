@@ -35,11 +35,11 @@ sec=defaultdict(list)
 for s,r in sites.items(): sec[r['sector']].append(float(r['lon']))
 BANDS={'S1':(88.30,89.30),'S2':(89.30,89.92),'S3':(89.92,90.30),'S4':(90.30,90.95),'S5':(90.95,91.60),'S6':(91.60,92.40)}
 for k,(lo,hi) in BANDS.items():
-    ax.add_patch(Rectangle((lo+0.01,24.44),hi-lo-0.02,0.07,color='#555555',lw=0)); ax.text((lo+hi)/2,24.525,k,ha='center',va='bottom',fontsize=6.5,color=INK)
+    ax.add_patch(Rectangle((lo+0.01,23.97),hi-lo-0.02,0.06,color='#555555',lw=0)); ax.text((lo+hi)/2,24.04,k,ha='center',va='bottom',fontsize=6.5,color=INK)
 for nm,x,y in [('Teesta',89.22,25.92),('Brahmaputra',90.25,26.18),('Old Brahmaputra',90.35,25.0),('Surma',91.62,25.03),('Kushiyara',91.72,24.66),('Mahananda',88.32,25.85)]:
     ax.text(x,y,nm,fontsize=5.5,color='#4a7fa5',style='italic',ha='center')
 ax.text(89.6,26.62,'INDIA',fontsize=7,color=MUTED); ax.text(91.5,25.62,'INDIA (Meghalaya)',fontsize=7,color=MUTED); ax.text(89.9,25.3,'BANGLADESH',fontsize=7,color=MUTED)
-ax.set_xlim(88.2,92.5); ax.set_ylim(24.10,26.98); ax.set_aspect(1/0.9)
+ax.set_xlim(88.2,92.5); ax.set_ylim(23.93,26.98); ax.set_aspect(1/0.9)
 ax.set_xlabel('Longitude (°E)'); ax.set_ylabel('Latitude (°N)')
 ax.legend(loc='lower left',bbox_to_anchor=(0.005,0.12),fontsize=6,frameon=True,framealpha=0.95,edgecolor='#cccccc',handletextpad=0.3,borderpad=0.4,title=f'Result at the {len(sites)} analysed sites',title_fontsize=6)
 fig.tight_layout(); fig.savefig(f'{OUT}/fig4_sites_map.png'); plt.close(fig)
