@@ -7,7 +7,7 @@ classes=['Pit extraction','Floodplain pits','Possible dredging','Bar loss','Bar 
 ext=classes[:4]
 tab=C.defaultdict(C.Counter)
 for r in rows: tab[sec[r['site']][0]][r['type']]+=1
-print('n sites',len(rows), 'IND',sum(sec[r['site']][2]=='IND' for r in rows))
+print('n sites',len(rows), 'IND',sum(sec[r['site']][2]=='IND' for r in rows),'outside BGD',sum(sec[r['site']][2] not in ('BGD','') for r in rows))
 print('sector|'+'|'.join(classes)+'|Total')
 for s in sorted(tab): print(s,'|'.join(str(tab[s][c]) for c in classes),sum(tab[s].values()),sep='|')
 tot=C.Counter(r['type'] for r in rows); print('All',*[tot[c] for c in classes],len(rows),sep='|')

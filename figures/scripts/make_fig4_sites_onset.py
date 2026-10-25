@@ -39,7 +39,7 @@ for k,(lo,hi) in BANDS.items():
 for nm,x,y in [('Teesta',89.22,25.92),('Brahmaputra',90.25,26.18),('Old Brahmaputra',90.35,25.0),('Surma',91.62,25.03),('Kushiyara',91.72,24.66),('Mahananda',88.32,25.85)]:
     ax.text(x,y,nm,fontsize=5.5,color='#4a7fa5',style='italic',ha='center')
 ax.text(89.6,26.62,'INDIA',fontsize=7,color=MUTED); ax.text(91.5,25.62,'INDIA (Meghalaya)',fontsize=7,color=MUTED); ax.text(89.9,25.3,'BANGLADESH',fontsize=7,color=MUTED)
-ax.set_xlim(88.2,92.5); ax.set_ylim(24.41,26.98); ax.set_aspect(1/0.9)
+ax.set_xlim(88.2,92.5); ax.set_ylim(24.10,26.98); ax.set_aspect(1/0.9)
 ax.set_xlabel('Longitude (°E)'); ax.set_ylabel('Latitude (°N)')
 ax.legend(loc='lower left',bbox_to_anchor=(0.005,0.12),fontsize=6,frameon=True,framealpha=0.95,edgecolor='#cccccc',handletextpad=0.3,borderpad=0.4,title=f'Result at the {len(sites)} analysed sites',title_fontsize=6)
 fig.tight_layout(); fig.savefig(f'{OUT}/fig4_sites_map.png'); plt.close(fig)
