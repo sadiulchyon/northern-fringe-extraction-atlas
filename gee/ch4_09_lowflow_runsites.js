@@ -95,3 +95,40 @@ window.__merit = async function(list){
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([out])); a.download='merit_'+sites.join('_')+'.bin'; document.body.appendChild(a); a.click(); a.remove();
   return tot;
 };
+
+// Added 25 Oct 2026. Same-season Landsat 8 / Landsat 7 pairs (1-16 days apart, seasons 2014-2021) for the sensor check:
+// window.__runPairs([[sid,W,S,E,N],...]) -> SITE_pair.bin (read by scripts/pair_test.py and scripts/pair_test_harm.py).
+window.__pair = async function(sid,W,S,E,N){
+  const reg = ee.Geometry.Rectangle([W,S,E,N], null, false);
+  const COL={L7:'LANDSAT/LE07/C02/T1_L2',L8:'LANDSAT/LC08/C02/T1_L2'};
+  const BN={L7:['SR_B2','SR_B3','SR_B4','SR_B5','SR_B7'],L8:['SR_B3','SR_B4','SR_B5','SR_B6','SR_B7']};
+  const clearOf=im=>{const qa=im.select('QA_PIXEL'); return qa.bitwiseAnd(1<<0).eq(0).and(qa.bitwiseAnd(1<<1).eq(0)).and(qa.bitwiseAnd(1<<3).eq(0)).and(qa.bitwiseAnd(1<<4).eq(0)).and(qa.bitwiseAnd(1<<2).eq(0));};
+  function prep(sen){ return ee.ImageCollection(COL[sen]).filterBounds(reg).filterDate('2012-11-01','2021-04-30').filter(ee.Filter.calendarRange(11,3,'month')).map(function(im){
+      const f=clearOf(im).unmask(0).rename('c').reduceRegion({reducer:ee.Reducer.mean(),geometry:reg,scale:60,maxPixels:1e8}).get('c');
+      return ee.Feature(null,{id:im.get('system:index'),sensor:sen,date:im.date().format('YYYY-MM-dd'),clear:f}); }); }
+  const rows=await new Promise((res,rej)=>prep('L7').merge(prep('L8')).filter(ee.Filter.gte('clear',0.5)).reduceColumns(ee.Reducer.toList(4),['sensor','date','clear','id']).get('list').evaluate((v,e)=>e?rej(e):res(v)));
+  const L7=rows.filter(r=>r[0]=='L7'), L8=rows.filter(r=>r[0]=='L8'&&r[2]>=0.85);
+  const season=d=>{const y=+d.slice(0,4),m=+d.slice(5,7);return m>=11?y+1:y;};
+  const best={};
+  for(const a of L8) for(const b of L7){ const dd=Math.abs((new Date(a[1])-new Date(b[1]))/864e5); if(dd>16||season(a[1])!=season(b[1])) continue;
+    const s=season(a[1]); const sc=dd/16 - b[2]; if(!best[s]||sc<best[s].sc) best[s]={sc,a,b,dd}; }
+  const seasons=Object.keys(best).map(Number).sort();
+  async function grab(img){ const url=await new Promise((res,rej)=>img.getDownloadURL({region:reg,crs:'EPSG:32646',scale:30,format:'NPY'},(u,e)=>e?rej(e):res(u))); const r=await fetch(url); if(r.status!==200) throw new Error('status '+r.status); return new Uint8Array(await r.arrayBuffer()); }
+  const meta=[], bufs=[];
+  for(const s of seasons){ for(const r of [best[s].a,best[s].b]){ const sen=r[0]; const im=ee.Image(COL[sen]+'/'+r[3]);
+      const sr=im.select(BN[sen],['GREEN','RED','NIR','SWIR1','SWIR2']).multiply(0.0000275).add(-0.2).multiply(10000);
+      bufs.push(await grab(sr.addBands(clearOf(im).rename('CLEAR')).unmask(-32768).toInt16())); meta.push({season:s,sen,date:r[1],clear:r[2],id:r[3]}); } }
+  const head=new TextEncoder().encode(JSON.stringify({site:sid,region:[W,S,E,N],bands:['GREEN','RED','NIR','SWIR1','SWIR2','CLEAR'],scenes:meta,lens:bufs.map(b=>b.length)})+'\n');
+  const tot=head.length+bufs.reduce((a,b)=>a+b.length,0); const out=new Uint8Array(tot); out.set(head,0); let o=head.length; for(const b of bufs){out.set(b,o);o+=b.length;}
+  window.__blob=new Blob([out]); window.__blobName=sid+'_pair.bin'; window.__save();
+  return seasons.map(s=>`${s} L8 ${best[s].a[1]} L7 ${best[s].b[1]} (${best[s].b[2].toFixed(2)}) dd${best[s].dd}`).join('\n');
+};
+window.__runPairs = async function(list){ for(const [sid,W,S,E,N] of list){ window.__res[sid+'p']='running'; try{window.__res[sid+'p']=await window.__pair(sid,W,S,E,N);}catch(e){window.__res[sid+'p']='ERROR '+e;} await new Promise(r=>setTimeout(r,1500)); } };
+// Sentinel-2 screening strip: Jan-Mar median true colour for the given years, saved as s2_NAME.png (vertical filmstrip).
+window.__s2strip = async function(name,lon,lat,km,yrs){
+  const reg=ee.Geometry.Point([lon,lat]).buffer(km*500).bounds();
+  const ims=yrs.map(y=>ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(reg).filterDate(y+'-01-01',y+'-03-31').filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',15)).median().visualize({bands:['B4','B3','B2'],min:300,max:2200}));
+  const url=await new Promise((res,rej)=>ee.ImageCollection(ims).getFilmstripThumbURL({dimensions:400,region:reg,crs:'EPSG:3857'},(u,e)=>e?rej(e):res(u)));
+  const r=await fetch(url); window.__blob=await r.blob(); window.__blobName='s2_'+name+'.png'; window.__save(); return r.status;
+};
+window.__res = window.__res || {};
