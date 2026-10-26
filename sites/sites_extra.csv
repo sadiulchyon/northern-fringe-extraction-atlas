@@ -214,3 +214,48 @@ N212,0,90.5175,23.7485,3000,,S4,BGD,Narayanganj,,,,,,,Sand fill on the Shitalaks
 N213,0,89.7427,24.3425,3000,,S2,BGD,Sirajganj,,,,,,,Jamuna bank sand stockpiles (2025 imagery),89.72791,89.75749,24.32903,24.35597
 N214,0,89.8321,24.4235,3000,,S2,BGD,Tangail,,,,,,,Jamuna east bank sand stockpiles (2025 imagery),89.8173,89.8469,24.41003,24.43697
 N215,0,90.3089,23.7215,3000,,S4,BGD,Dhaka,,,,,,,Sand fill on the Turag floodplain at Aminbazar (2025 imagery),90.29418,90.32362,23.70803,23.73497
+N216,0,90.4403,24.7885,3000,,S4,BGD,Dhaka,,,,,,,Old Brahmaputra floodplain north of Mymensingh (new water outside the channel) (neighbour of N22; reach screen),90.42546,90.45514,24.77503,24.80197
+N217,0,90.4403,24.8155,3000,,S4,BGD,Dhaka,,,,,,,"Old Brahmaputra floodplain north of Mymensingh, upper (neighbour of N22; reach screen)",90.42545,90.45515,24.80203,24.82897
+N218,0,90.3807,24.7075,3000,,S4,BGD,Dhaka,,,,,,,Old Brahmaputra west of Mymensingh (neighbour of N22; reach screen),90.36587,90.39553,24.69403,24.72097
+N219,0,90.3807,24.7345,3000,,S4,BGD,Dhaka,,,,,,,"Old Brahmaputra west of Mymensingh, upper (neighbour of N22; reach screen)",90.36586,90.39554,24.72103,24.74797
+N220,0,90.4701,24.7615,3000,,S4,BGD,Dhaka,,,,,,,Old Brahmaputra floodplain east of Mymensingh (neighbour of N22; reach screen),90.45526,90.48494,24.74803,24.77497
+N221,0,88.7417,25.6795,3000,,S1,BGD,Rangpur,,,,,,,Atrai below Kushalpur (neighbour of N79; reach screen),88.72675,88.75665,25.66603,25.69297
+N222,0,88.7119,25.6795,3000,,S1,BGD,Rangpur,,,,,,,"Atrai below Kushalpur, west (neighbour of N79; reach screen)",88.69695,88.72685,25.66603,25.69297
+N223,0,88.7417,25.7605,3000,,S1,BGD,Rangpur,,,,,,,Atrai above Kushalpur (neighbour of N79; reach screen),88.72674,88.75666,25.74703,25.77397
+N224,0,89.8443,25.0045,3000,,S2,BGD,Dhaka,,,,,,,Old Brahmaputra below the E042 bar loss (neighbour of E042; reach screen),89.82943,89.85917,24.99103,25.01797
+N225,0,88.5927,26.3005,3000,,S1,BGD,Rangpur,,,,,,,Mahananda below the E010 bar loss (neighbour of E010; reach screen),88.57767,88.60773,26.28703,26.31397
+N226,0,88.5927,26.3275,3000,,S1,BGD,Rangpur,,,,,,,"Mahananda at the E010 bar loss, upper (neighbour of E010; reach screen)",88.57767,88.60773,26.31403,26.34097
+N227,0,90.0529,25.1665,3000,,S3,BGD,Dhaka,,,,,,,Sherpur river above the E050 dredging (neighbour of E050; reach screen),90.03801,90.06779,25.15303,25.17997
+N228,0,90.0827,25.1395,3000,,S3,BGD,Dhaka,,,,,,,Sherpur river beside the E050 dredging (neighbour of E050; reach screen),90.06782,90.09758,25.12603,25.15297
+N229,0,89.0099,26.3545,3000,,S1,BGD,Rangpur,,,,,,,Floodplain beside the E015 pit fields (neighbour of E015; reach screen),88.99486,89.02494,26.34103,26.36797
+N230,0,88.9205,26.4355,3000,,S1,IND,West Bengal,,,,,,,Floodplain beside the E013 pit fields (neighbour of E013; reach screen),88.90545,88.93555,26.42203,26.44897
+N231,0,89.1291,26.3005,3000,,S1,BGD,Rangpur,,,,,,,River beside the E016 bar loss (neighbour of E016; reach screen),89.11407,89.14413,26.28703,26.31397
+N232,0,90.5893,25.0855,3000,,S4,BGD,Dhaka,,,,,,,Someshwari-Kangsa channel above N144 (neighbour of N144; reach screen),90.57442,90.60418,25.07203,25.09897
+N233,0,89.9337,24.8965,3000,,S3,BGD,Dhaka,,,,,,,Old Brahmaputra beside the E046 dredging (neighbour of E046; reach screen),89.91884,89.94856,24.88303,24.90997
+N234,0,92.02,25.1535,3000,,S6,Bangladesh,Sylhet,,,,,,,Piyain below Jaflong (S2 screen),92.00511,92.03489,25.14003,25.16697
+N235,0,90.152,24.877,3000,,S3,BGD,Mymensingh,,,,,,,"Old Brahmaputra below Jamalpur, dredged-sand stockpile north bank (S3 gap screen; Mymensingh BIWTA spoil tender 2024)",90.13715,90.16685,24.86353,24.89047
+N236,0,90.121,24.875,3000,,S3,BGD,Mymensingh,,,,,,,Old Brahmaputra bars and bank stockpiles near Piyarpur (S3 gap screen),90.10615,90.13585,24.86153,24.88847
+N237,0,90.181,24.9,3000,,S3,BGD,Mymensingh,,,,,,,Old Brahmaputra with re-excavated loop channel (S3 gap screen),90.16614,90.19586,24.88653,24.91347
+N238,0,90.472,24.688,3000,,S4,BGD,Mymensingh,,,,,,,"Old Brahmaputra at Bhangnamari, Gauripur: BIWTA dredged-sand stockpile (Mymensingh tender 2024)",90.45717,90.48683,24.67453,24.70147
+N239,0,89.952,24.954,2500,,S3,BGD,Mymensingh,,,,,,,"Char Pakshimari balu mahal, Old Brahmaputra (Sherpur list: digging ongoing)",89.93961,89.96439,24.94277,24.96523
+N240,0,90.002,25.279,3000,,S3,BGD,Mymensingh,,,,,,,"Hill-foot stream on the Meghalaya border, Jhenaigati (S3 gap screen)",89.9871,90.0169,25.26553,25.29247
+N241,0,88.3854,25.8354,3000,,S1,BGD,Rangpur,,,,,,,"Tangon at Kastor, Pirganj (Thakurgaon balu mahal, khas 1433 BS)",88.37043,88.40037,25.82193,25.84887
+N242,0,89.0794,26.1139,3000,,S1,BGD,Rangpur,,,,,,,"Teesta at Bhendabari, Dimla (Nilphamari balu mahal list 2022)",89.06439,89.09441,26.10043,26.12737
+N243,0,89.0349,25.8293,3000,,S1,BGD,Rangpur,,,,,,,"Jamuneshwari at Chandkhana, Kishoreganj (Nilphamari balu mahal list 2022)",89.01993,89.04987,25.81583,25.84277
+N244,0,88.8771,26.0354,3000,,S1,BGD,Rangpur,,,,,,,"Deonai near Dubachhuri, Nilphamari Sadar (Nilphamari balu mahal list 2022)",88.8621,88.8921,26.02193,26.04887
+N245,0,89.996,24.9025,2500,,S3,BGD,Mymensingh,,,,,,,"Old Brahmaputra at Charjothartopur, Jamalpur (Jamalpur balu mahal list 2021)",89.98362,90.00838,24.89127,24.91373
+N246,0,90.1199,24.8699,3000,,S3,BGD,Mymensingh,,,,,,,"Old Brahmaputra at Narundi, Jamalpur (Jamalpur balu mahal list 2021)",90.10505,90.13475,24.85643,24.88337
+N247,0,89.8065,25.1335,3000,,S2,BGD,Mymensingh,,,,,,,"Brahmaputra-Jamuna at Goaler Char, Islampur (Jamalpur balu mahal list 2021)",89.79162,89.82138,25.12003,25.14697
+N248,0,90.0092,24.9844,2500,,S3,BGD,Mymensingh,,,,,,,Mrigi at Sherpur town (Sherpur balu mahal list),89.99681,90.02159,24.97317,24.99563
+N249,0,90.2027,25.1459,2500,,S3,BGD,Mymensingh,,,,,,,"Bhogai at Kerengapara-Phulpur, Nalitabari (Sherpur balu mahal list)",90.1903,90.2151,25.13467,25.15713
+N250,0,90.27,24.8602,3000,,S3,BGD,Mymensingh,,,,,,,Old Brahmaputra at Borer Char-Tarapur (Mymensingh BIWTA lots 2024),90.25515,90.28485,24.84673,24.87367
+N251,0,90.2765,24.8324,2500,,S3,BGD,Mymensingh,,,,,,,Old Brahmaputra at Char Dhari Kushtia (Mymensingh BIWTA lots 2024),90.26413,90.28887,24.82117,24.84363
+N252,0,90.4622,24.716,3000,,S4,BGD,Mymensingh,,,,,,,Old Brahmaputra at Char Nilakshia (Mymensingh BIWTA lots 2024),90.44737,90.47703,24.70253,24.72947
+N253,0,90.5107,24.623,3000,,S4,BGD,Mymensingh,,,,,,,Old Brahmaputra at Char Algi (Mymensingh BIWTA lots 2024),90.49588,90.52552,24.60953,24.63647
+N254,0,88.5912,26.4148,3000,,S1,BGD,Rangpur,,,,,,,Talma pathar mahals at Madhupara-Sardarpara (Panchagarh Sadar; stone gazette 2013),88.57615,88.60625,26.40133,26.42827
+N255,0,88.5105,26.4066,3000,,S1,BGD,Rangpur,,,,,,,"Chawai pathar mahals at Omarpur-Pradhanpara (Panchagarh Sadar; stone gazette 2013, 2016)",88.49546,88.52554,26.39313,26.42007
+N256,0,88.5383,26.3737,3000,,S1,BGD,Rangpur,,,,,,,Karatoya pathar mahal-02 at Dhakkamara (Panchagarh Sadar; stone gazette 2013),88.52326,88.55334,26.36023,26.38717
+N257,0,88.6957,26.2602,3000,,S1,BGD,Rangpur,,,,,,,Ghoramara pathar mahal at Naotari-Tokrabhasa (Boda; stone gazette 2013),88.68067,88.71073,26.24673,26.27367
+N258,0,88.728,26.1457,3000,,S1,BGD,Rangpur,,,,,,,Karatoya pathar mahal at Sonapota-Sultanpur (Debiganj; stone gazette 2013),88.71299,88.74301,26.13223,26.15917
+N259,0,88.3779,26.5914,3000,,S1,BGD,Rangpur,,,,,,,Mahananda pathar-02 at Khanji Kismat (Tetulia; stone gazette 2013),88.36283,88.39297,26.57793,26.60487
+N260,0,89.168,25.499,3000,,S1,BGD,Rangpur,,,,,,,"Tarafsadi balu mahal (Mithapukur; Rangpur list, leased 1427 BS)",89.15307,89.18293,25.48553,25.51247
