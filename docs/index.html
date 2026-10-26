@@ -376,7 +376,7 @@ dash.calc('summary', {
     const lo = Math.min(...firstYears), hi = Math.max(...firstYears);
     return [{
       points: inventory.length, sites: sites.filter((s) => s.site_id[0] === 'E').length, analysed: site_results.length, pit: pit.length,
-      takeaway: `${site_results.length} sites analysed along the northern border: ${site_results.filter((r) => r.site[0] === 'E').length} clustered from the inventory and ${site_results.filter((r) => r.site[0] === 'N').length} added from news reports, Google Maps and satellite screening (river reaches, depots, land ports and sand-filled land). ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`
+      takeaway: (() => { const n = (ts) => site_results.filter((r) => ts.includes(r.type)).length; const ex = n(['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss']), sup = n(['Depot / stockpile', 'Land filling']), veg = n(['Bar vegetation']), none = n(['No signal']); return `Of ${site_results.length} sites analysed along the northern border, ${ex + sup + veg} show a detectable change in the January low-flow series: ${ex} extraction-type (pits, floodplain pits, possible dredging, bar loss), ${sup} depots or sand fills and ${veg} bar vegetation (char cropping, not extraction); ${none} show no signal. ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`; })()
     }];
   }
 });

@@ -28,6 +28,8 @@ Limits: detection at 30 m lags the true start where pits are small (about four y
 
 ## Main results (26 October 2026)
 
+Of 343 analysed sites, 173 show a detectable change in the January low-flow series: 77 extraction-type (pit extraction, floodplain pits, possible dredging, bar loss), 22 depots or sand fills and 74 bar vegetation (char cropping, not extraction); 170 show no signal.
+
 | Class | Sites |
 |---|---|
 | Pit extraction | 19 |
