@@ -38,15 +38,19 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 </style>
 <script>
 /* Standalone data layer: loads the CSV/JSON files in data/ and offers the small API the atlas page uses
-   (dash.data, dash.calc, dash.onData, dash.colors). No server or Claude account is needed. */
+   (dash.data, dash.calc, dash.onData, dash.load, dash.ready, dash.colors). No server or Claude account is needed.
+   FILES load with the page; LAZY files (the 10 MB image chips) load on first use through dash.load(id). */
 (function () {
   const FILES = {
     inventory: ['data/inventory.csv', 'csv'], sites: ['data/sites.csv', 'csv'], site_results: ['data/site_results.csv', 'csv'],
-    onset: ['data/onset.csv', 'csv'], series: ['data/series.csv', 'csv'], chips: ['data/chips.json', 'json'],
+    onset: ['data/onset.csv', 'csv'], series: ['data/series.csv', 'csv'],
     screening: ['data/screening.csv', 'csv'], events: ['data/events.csv', 'csv'], countries: ['data/countries.json', 'json'],
     rivers: ['data/rivers.json', 'json'], labels: ['data/labels.csv', 'csv']
   };
-  const store = {}, calcs = {}, memo = {}, cbs = [];
+  const LAZY = { chips: ['data/chips.json', 'json'] };
+  const store = {}, calcs = {}, memo = {}, cbs = [], pending = {};
+  const get = (url, kind) => fetch(url, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return kind === 'csv' ? r.text() : r.json(); })
+    .then((v) => { if (kind === 'csv') { const rows = d3.csvParse(v); return { status: 'ok', data: rows, columns: rows.columns }; } return { status: 'ok', data: v, columns: Object.keys(v[0] || {}) }; });
   const calcData = (id) => {
     if (memo[id]) return memo[id];
     const spec = calcs[id], ins = spec.inputs.map((i) => window.dash.data(i));
@@ -59,16 +63,30 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   };
   window.dash = {
     colors: ['#2b6cb0', '#c9a227', '#4d9221', '#b2182b', '#762a83', '#e08214', '#1b9e77', '#7a7770'],
-    data(id) { if (calcs[id]) return calcData(id); return store[id] || { status: FILES[id] ? 'loading' : 'missing', data: [], columns: [] }; },
+    data(id) { if (calcs[id]) return calcData(id); return store[id] || { status: FILES[id] ? 'loading' : LAZY[id] ? 'idle' : 'missing', data: [], columns: [] }; },
     calc(id, spec) { calcs[id] = spec; },
     onData(fn) { cbs.push(fn); try { fn(); } catch (e) { console.error(e); } },
+    load(id) {
+      if (!LAZY[id]) return Promise.resolve(window.dash.data(id));
+      if (!pending[id]) {
+        store[id] = { status: 'loading', data: [], columns: [] };
+        pending[id] = get(...LAZY[id]).then((v) => { store[id] = v; return v; })
+          .catch((e) => { console.error(e); delete pending[id]; return (store[id] = { status: 'error', data: [], message: String(e) }); });
+      }
+      return pending[id];
+    },
+    ready() { return left === 0; },
     params() { return {}; }, setParams() {}, resetParams() {}, setLink() {}, refresh() {}, loader() {}
   };
-  const fire = () => { Object.keys(memo).forEach((k) => delete memo[k]); cbs.forEach((f) => { try { f(); } catch (e) { console.error(e); } }); };
+  // Redraws are coalesced: files that arrive together trigger one redraw, not one each.
+  let queued = false;
+  const fire = () => {
+    if (queued) return; queued = true;
+    setTimeout(() => { queued = false; Object.keys(memo).forEach((k) => delete memo[k]); cbs.forEach((f) => { try { f(); } catch (e) { console.error(e); } }); }, 0);
+  };
   let left = Object.keys(FILES).length;
   Object.entries(FILES).forEach(([id, [url, kind]]) => {
-    fetch(url, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return kind === 'csv' ? r.text() : r.json(); })
-      .then((v) => { if (kind === 'csv') { const rows = d3.csvParse(v); store[id] = { status: 'ok', data: rows, columns: rows.columns }; } else store[id] = { status: 'ok', data: v, columns: Object.keys(v[0] || {}) }; })
+    get(url, kind).then((v) => { store[id] = v; })
       .catch((e) => { console.error(e); store[id] = { status: 'error', data: [], message: String(e) }; })
       .finally(() => { left -= 1; if (left === 0 || ['site_results', 'sites', 'onset', 'inventory'].includes(id)) fire(); });
   });
@@ -102,6 +120,11 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 .nf-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); margin-bottom: var(--cds-gap-sm); }
 .nf-legend button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--color-fg); }
 .nf-legend button[aria-pressed="false"] { opacity: .35; }
+.nf-legend .nf-showall { text-decoration: underline; color: var(--color-fg-muted); }
+.nf-table th button { all: unset; cursor: pointer; }
+.nf-table th button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; border-radius: 3px; }
+.nf-table th[aria-sort="ascending"] button::after { content: " ▲"; font-size: .8em; }
+.nf-table th[aria-sort="descending"] button::after { content: " ▼"; font-size: .8em; }
 .nf-legend button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; border-radius: 3px; }
 .nf-sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .nf-sq { width: 12px; height: 8px; border: 2px solid; border-radius: 2px; display: inline-block; box-sizing: border-box; }
@@ -165,11 +188,11 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 
   <section class="nf-card" id="map-card">
     <h2>Inventory and sites on the Bangladesh map</h2>
-    <div class="note">Points are the 411 inventory records; boxes are the 83 site windows, outlined by their low-flow result. Rivers are HydroRIVERS reaches with mean flow of 150 m³/s or more, drawn wider for larger rivers; borders are Natural Earth. The map opens on the northern border belt: scroll or pinch to zoom, drag to pan, click a box to open that site below.</div>
+    <div class="note">Points are the <span data-source="summary" data-field="points">411</span> inventory records; boxes are the <span data-source="summary" data-field="sites">83</span> inventory site windows and the <span data-source="summary" data-field="added">260</span> added sites, outlined by their low-flow result. Rivers are HydroRIVERS reaches with mean flow of 150 m³/s or more, drawn wider for larger rivers; borders are Natural Earth. The map opens on the northern border belt: scroll or pinch to zoom, drag to pan, click a site for its details. Click a legend entry to hide or show that label group or result class.</div>
     <div class="nf-legend" id="legend-groups" data-source="inventory"></div>
     <div class="nf-legend" id="legend-types" data-source="site_results"></div>
     <div class="nf-ctl"><button type="button" id="map-reset" class="nf-btn">Show all of Bangladesh</button></div>
-    <div class="nf-box nf-map dash-skeleton" id="map" data-source="inventory sites site_results countries rivers labels site_table series chips screening"></div>
+    <div class="nf-box nf-map dash-skeleton" id="map" data-source="inventory sites site_results countries rivers labels site_table series screening"></div>
   </section>
 
   <section class="nf-card" id="timeline-card">
@@ -210,7 +233,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   <div class="nf-grid">
     <section class="nf-card" id="class-card">
       <h2>What the sites show, by sector</h2>
-      <div class="note">All 83 inventory site windows plus the added N reaches, west (S1) to east (S6): result of the low-flow analysis, or skipped at screening because the channel is too narrow, braided or deep for 30 m Landsat.</div>
+      <div class="note">All <span data-source="summary" data-field="sites">83</span> inventory site windows plus the <span data-source="summary" data-field="added">260</span> added N sites, west (S1) to east (S6): result of the low-flow analysis, or skipped at screening because the channel is too narrow, braided or deep for 30 m Landsat.</div>
       <div class="nf-legend" id="legend-class"></div>
       <div class="nf-box nf-chart dash-skeleton" id="classes" data-source="class_by_sector"></div>
     </section>
@@ -223,7 +246,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 
   <section class="nf-card" id="site-card">
     <h2>Site detail</h2>
-    <div class="nf-ctl"><label for="site-pick">Site</label><select id="site-pick" data-source="site_results"></select></div>
+    <div class="nf-ctl"><label for="site-pick">Site</label><select id="site-pick" data-source="site_results"></select><button type="button" id="site-link" class="nf-btn" style="margin-bottom:0">Copy link to this site</button></div>
     <p class="nf-sitenote" id="site-note"></p>
     <div class="note">Area in the river outline (low-flow channel plus 100 m) from one clear January scene per dry season. Hollow points are hazy or partial scenes left out of the statistics.</div>
     <div class="nf-legend" id="legend-series"></div>
@@ -232,7 +255,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 
   <section class="nf-card" id="table-card">
     <h2>Analysed sites</h2>
-    <div class="note">Click a row to open the site above.</div>
+    <div class="note">Sites from west to east. Click a column heading to sort; click a row to open the site above.</div>
     <div class="nf-tablebox">
       <table class="nf-table" id="site-table" data-source="site_table" data-row-key="site">
         <thead><tr>
@@ -247,7 +270,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 
   <section class="nf-card" id="screen-card">
     <h2>Screening of all sites</h2>
-    <div class="note">Each of the 83 inventory site windows was checked on Google satellite imagery before analysis; N-numbered reaches are not in the inventory and were added from news reports of extraction. Skipped sites and the reason; click an analysed site to open it above.</div>
+    <div class="note">Each of the <span data-source="summary" data-field="sites">83</span> inventory site windows was checked on Google satellite imagery before analysis; the <span data-source="summary" data-field="added">260</span> N-numbered sites lie outside those windows and were added from press reports, imagery sweeps, Google Maps listings, lease lists and inventory records beyond the clusters. Skipped sites and the reason; click a column heading to sort, or an analysed site to open it above.</div>
     <div class="nf-ctl"><label for="screen-q">Search</label><input id="screen-q" type="search" placeholder="Site, sector or reason"></div>
     <div class="nf-tablebox">
       <table class="nf-table" id="screen-table" data-source="screen_table" data-row-key="site">
@@ -275,6 +298,7 @@ window.NF = {
     'Not yet run': 'var(--color-border-line)'
   },
   hidden: new Set(),
+  hiddenTypes: new Set(),
   site: 'E076'
 };
 
@@ -299,7 +323,7 @@ dash.calc('site_table', {
 
 dash.calc('class_by_sector', {
   title: 'Site results by sector',
-  description: 'Counts the 83 sites in each sector by low-flow result, or as skipped at screening.',
+  description: 'Counts every site (inventory windows and added N sites) in each sector by low-flow result, or as skipped at screening.',
   inputs: ['sites', 'site_results', 'screening'],
   fn: (sites, site_results, screening) => sites.map((s) => {
     const r = site_results.find((x) => x.site === s.site_id);
@@ -368,14 +392,14 @@ dash.calc('spread_sector', {
 
 dash.calc('summary', {
   title: 'Headline figures',
-  description: 'Counts of points, sites, analysed sites and pit-type sites, and the range of pit onsets.',
+  description: 'Counts of points, inventory site windows, added sites, analysed sites and pit-type sites, and the range of pit onsets.',
   inputs: ['inventory', 'sites', 'site_results'],
   fn: (inventory, sites, site_results) => {
     const pit = site_results.filter((r) => r.type === 'Pit extraction' || r.type === 'Floodplain pits');
     const firstYears = pit.map((r) => Number(String(r.visual_onset).slice(0, 4))).filter((y) => y > 0);
     const lo = Math.min(...firstYears), hi = Math.max(...firstYears);
     return [{
-      points: inventory.length, sites: sites.filter((s) => s.site_id[0] === 'E').length, analysed: site_results.length, pit: pit.length,
+      points: inventory.length, sites: sites.filter((s) => s.site_id[0] === 'E').length, added: sites.filter((s) => s.site_id[0] === 'N').length, analysed: site_results.length, pit: pit.length,
       takeaway: (() => { const n = (ts) => site_results.filter((r) => ts.includes(r.type)).length; const ex = n(['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss']), sup = n(['Depot / stockpile', 'Land filling']), veg = n(['Bar vegetation']), none = n(['No signal']); return `Of ${site_results.length} sites analysed along the northern border, ${ex + sup + veg} show a detectable change in the January low-flow series: ${ex} extraction-type (pits, floodplain pits, possible dredging, bar loss), ${sup} depots or sand fills and ${veg} bar vegetation (char cropping, not extraction); ${none} show no signal. ${pit.length} show pit extraction that can be dated from Landsat (in the channel or as floodplain pit fields), with first signs between ${lo} and ${hi}. Brahmaputra-side sites lose sand to vegetation rather than to extraction.`; })()
     }];
   }
@@ -387,6 +411,16 @@ dash.calc('summary', {
   const tip = () => document.querySelector('#map .nf-tip');
   const typeOf = (sid, res) => (res.find((r) => r.site === sid) || {}).type || 'Not yet run';
   let zoomT = null;
+  // The chosen site is kept in the address as #site=E076, so a site can be shared or bookmarked.
+  const setHash = (sid) => { if (location.hash !== '#site=' + sid) history.replaceState(null, '', '#site=' + sid); };
+  const openSite = (sid, scroll = true) => { NF.site = sid; drawSeries(); setHash(sid); if (scroll) document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const hashSite = () => { const m = location.hash.match(/^#site=([A-Za-z]\d+)$/); return m ? m[1].toUpperCase() : null; };
+  let deepLink = hashSite();
+  if (deepLink) NF.site = deepLink;
+  window.addEventListener('hashchange', () => {
+    const s = hashSite(), r = dash.data('site_results');
+    if (s && r.status === 'ok' && r.data.some((x) => x.site === s)) openSite(s);
+  });
 
   function legends(inv, res) {
     const lg = document.getElementById('legend-groups');
@@ -406,14 +440,25 @@ dash.calc('summary', {
     lt.replaceChildren();
     const mkl = document.createElement('span'); mkl.style.display = 'inline-flex'; mkl.style.alignItems = 'center'; mkl.style.gap = '6px';
     const dia = document.createElement('span'); dia.style.cssText = 'width:9px;height:9px;transform:rotate(45deg);display:inline-block;background:var(--color-fg)';
-    const mt = document.createElement('span'); mt.textContent = 'Analysed site (click for details):'; mt.style.fontWeight = '600';
+    const mt = document.createElement('span'); mt.textContent = 'Sites by result:'; mt.style.fontWeight = '600';
     mkl.append(dia, mt); lt.append(mkl);
+    const scr = dash.data('screening'), scrRows = scr.status === 'ok' ? scr.data : [];
     NF.types.forEach((ty) => {
-      const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px';
+      const n = ty === 'Skipped' ? scrRows.filter((x) => x.status === 'Skipped' && !res.some((r) => r.site === x.site)).length : res.filter((r) => r.type === ty).length;
+      if (!n) return;
+      const b = document.createElement('button'); b.type = 'button';
+      b.setAttribute('aria-pressed', NF.hiddenTypes.has(ty) ? 'false' : 'true');
       const sq = document.createElement('span'); sq.className = 'nf-sq'; sq.style.borderColor = NF.typeColor[ty];
-      const t = document.createElement('span'); t.textContent = ty;
-      s.append(sq, t); lt.append(s);
+      const t = document.createElement('span'); t.textContent = `${ty} (${n})`;
+      b.append(sq, t);
+      b.addEventListener('click', () => { NF.hiddenTypes.has(ty) ? NF.hiddenTypes.delete(ty) : NF.hiddenTypes.add(ty); draw(); });
+      lt.append(b);
     });
+    if (NF.hiddenTypes.size || NF.hidden.size) {
+      const all = document.createElement('button'); all.type = 'button'; all.className = 'nf-showall'; all.textContent = 'Show all';
+      all.addEventListener('click', () => { NF.hiddenTypes.clear(); NF.hidden.clear(); draw(); });
+      lt.append(all);
+    }
   }
 
   function draw() {
@@ -481,7 +526,7 @@ dash.calc('summary', {
         .attr('data-lon', d3.median(rows, (r) => r.lon)).attr('data-lat', d3.max(rows, (r) => r.lat) + 0.12)
         .text(s).style('fill', 'var(--color-fg)').style('font-size', '11px').style('font-weight', 600);
     });
-    const rects = g.append('g').selectAll('rect').data(sites).join('rect')
+    const rects = g.append('g').selectAll('rect').data(sites.filter((d) => !NF.hiddenTypes.has(typeOf(d.site_id, res)))).join('rect')
       .attr('x', (d) => X(d.w)).attr('y', (d) => Y(d.n)).attr('width', (d) => Math.max(2, X(d.e) - X(d.w))).attr('height', (d) => Math.max(2, Y(d.s) - Y(d.n)))
       .style('fill', 'transparent').style('stroke', (d) => NF.typeColor[typeOf(d.site_id, res)])
       .style('stroke-width', (d) => (['Not yet run', 'Skipped'].includes(typeOf(d.site_id, res)) ? 1 : 2.5)).style('cursor', 'pointer')
@@ -506,9 +551,9 @@ dash.calc('summary', {
       t.append('div').attr('class', 't').text(`${d.site_id} · ${d.sector} · ${d.admin0} · ${d.n_rec} records`);
       t.append('div').text(typeOf(d.site_id, res) === 'Skipped' ? 'Skipped: ' + reasonOf(d.site_id) : typeOf(d.site_id, res));
     })).on('mouseleave', () => tp.attr('hidden', true))
-      .on('click', (ev, d) => { if (res.some((r) => r.site === d.site_id)) { NF.site = d.site_id; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+      .on('click', (ev, d) => { if (res.some((r) => r.site === d.site_id)) { openSite(d.site_id); } });
     const st = dash.data('site_table'), se = dash.data('series');
-    const anal = st.status === 'ok' ? st.data.filter((r) => Number.isFinite(r.slon)) : [];
+    const anal = st.status === 'ok' ? st.data.filter((r) => Number.isFinite(r.slon) && !NF.hiddenTypes.has(r.type)) : [];
     const sym = d3.symbol(d3.symbolDiamond, 150);
     const mk = g.append('g').selectAll('path').data(anal).join('path').attr('class', 'nf-mk').attr('d', sym)
       .style('fill', (d) => NF.typeColor[d.type]).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5).style('cursor', 'pointer')
@@ -535,13 +580,22 @@ dash.calc('summary', {
       row('Sand break', d.sand_break ? `${d.sand_break}: ${fmt(d.sand_before)} → ${fmt(d.sand_after)} ha${fp(d.sand_p)}` : 'n/a');
       row('Sand-to-water break', d.s2w_break ? `${d.s2w_break}: ${fmt(d.s2w_before)} → ${fmt(d.s2w_after)} ha${fp(d.s2w_p)}` : 'n/a');
       const note = document.createElement('p'); note.className = 'txt'; note.textContent = d.note; pop.append(note);
+      const chipBox = document.createElement('div'); chipBox.style.display = 'grid'; chipBox.style.gap = 'var(--cds-gap-xs)';
+      pop.append(chipBox);
+      const fillChips = () => {
+      chipBox.replaceChildren();
       const ch = dash.data('chips');
+      if (ch.status !== 'ok') {
+        const msg = document.createElement('div'); msg.className = 'nf-sub'; msg.setAttribute('role', 'status');
+        msg.textContent = ch.status === 'error' ? 'The January Landsat scenes failed to load.' : 'Loading the January Landsat scenes…';
+        chipBox.append(msg);
+      }
       if (ch.status === 'ok') {
         const cr = ch.data.filter((q) => q.site === d.site).sort((p, q) => p.season - q.season);
         if (cr.length) {
           const hd = document.createElement('div'); hd.className = 'nf-sub';
           hd.textContent = 'January Landsat scenes: baseline, before and after the change, latest (outside the river outline faded)';
-          pop.append(hd);
+          chipBox.append(hd);
           const mkGrid = (kind) => {
             const gd = document.createElement('div'); gd.className = 'nf-chips';
             cr.forEach((q) => {
@@ -556,16 +610,19 @@ dash.calc('summary', {
             });
             return gd;
           };
-          pop.append(mkGrid('img'));
-          const hc = document.createElement('div'); hc.className = 'nf-sub'; hc.textContent = 'Classification inside the river outline'; pop.append(hc);
-          pop.append(mkGrid('cls'));
+          chipBox.append(mkGrid('img'));
+          const hc = document.createElement('div'); hc.className = 'nf-sub'; hc.textContent = 'Classification inside the river outline'; chipBox.append(hc);
+          chipBox.append(mkGrid('cls'));
           const lg2 = document.createElement('div'); lg2.className = 'nf-clsleg';
           [['#1f4e9c', 'Water'], ['#f2d27a', 'Sand / bare bed'], ['#4f9a45', 'Vegetation'], ['#c8c3b8', 'Other'], ['#ffffff', 'Cloud / no data']].forEach(([c, l]) => {
             const s = document.createElement('span'); const i = document.createElement('i'); i.style.background = c; s.append(i, document.createTextNode(l)); lg2.append(s);
           });
-          pop.append(lg2);
+          chipBox.append(lg2);
         }
       }
+      };
+      fillChips();
+      if (dash.data('chips').status !== 'ok') dash.load('chips').then(() => { if (chipBox.isConnected) fillChips(); });
       if (se.status === 'ok') {
         const rows = se.data.filter((q) => q.site === d.site).map((q) => ({ y: +q.season, f: q.flag, w: +q.water_ha, s: +q.sand_ha }));
         const sw = 290, sh = 90, m = { l: 26, r: 6, t: 6, b: 16 };
@@ -583,7 +640,7 @@ dash.calc('summary', {
         pop.append(lg);
       }
       const b = document.createElement('button'); b.type = 'button'; b.className = 'nf-btn'; b.textContent = 'Open full series below';
-      b.onclick = () => { NF.site = d.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      b.onclick = () => { openSite(d.site); };
       pop.append(b);
       box.append(pop); NF.open = d.site; x.focus();
     };
@@ -652,8 +709,8 @@ dash.calc('summary', {
         .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => `${r.site}, ${r.type}, first change ${r.year}`)
         .on('mousemove', (e, r) => { const [mx, my] = d3.pointer(e, box); tp.attr('hidden', null).html(''); tp.append('div').attr('class', 't').text(`${r.site} · ${r.sector} · ${r.type}`); tp.append('div').text(r.river); tp.append('div').text(`First change ${r.year} (visual onset ${r.visual_onset})`); const tw = tp.node().offsetWidth; tp.style('left', Math.min(W - tw - 4, mx + 12) + 'px').style('top', (my + 12) + 'px'); })
         .on('mouseleave', () => tp.attr('hidden', true))
-        .on('click', (e, r) => { if (r.year <= NF.year) { NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } })
-        .on('keydown', (e, r) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        .on('click', (e, r) => { if (r.year <= NF.year) { openSite(r.site); } })
+        .on('keydown', (e, r) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSite(r.site); } });
       // cumulative strip
       cbox.replaceChildren();
       const cw = W, chh = 110, m = { l: 34, r: 10, t: 8, b: 22 };
@@ -742,7 +799,9 @@ dash.calc('summary', {
     evs.forEach((e) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = e.source; a.target = '_blank'; a.rel = 'noopener'; a.textContent = `${e.year}: ${e.label} (${e.scope})`; li.append(a); el.append(li); });
     svg.append('g').selectAll('text').data(rows).join('text').attr('x', 4).attr('y', (r) => y(r.site) + y.bandwidth() / 2 + 4)
       .text((r) => `${r.site} ${r.sector}`).style('fill', 'var(--color-fg)').style('font-size', '12px').style('cursor', 'pointer')
-      .on('click', (ev, r) => { NF.site = r.site; drawSeries(); });
+      .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => `${r.site}, ${r.type}: open site detail`)
+      .on('click', (ev, r) => openSite(r.site))
+      .on('keydown', (ev, r) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openSite(r.site); } });
     const span = (r) => {
       const ys = String(r.visual_onset || '').match(/\d{4}/g);
       if (!ys) return null;
@@ -752,11 +811,13 @@ dash.calc('summary', {
     svg.append('g').selectAll('rect').data(rows.filter(span)).join('rect')
       .attr('x', (r) => x(span(r)[0])).attr('width', (r) => Math.max(4, x(span(r)[1]) - x(span(r)[0])))
       .attr('y', (r) => y(r.site)).attr('height', y.bandwidth()).attr('rx', 4)
-      .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.55);
+      .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.55).style('cursor', 'pointer')
+      .on('click', (ev, r) => openSite(r.site)).append('title').text((r) => `${r.site} · ${r.river}: ${r.type}, onset ${r.visual_onset}`);
     svg.append('g').selectAll('circle').data(rows.filter((r) => r.water_break)).join('circle')
       .attr('cx', (r) => x(r.water_break)).attr('cy', (r) => y(r.site) + y.bandwidth() / 2).attr('r', 4)
       .style('stroke', 'var(--color-fg)').style('stroke-width', 1.5)
-      .style('fill', (r) => (r.water_p < 0.05 ? 'var(--color-fg)' : 'var(--color-panel)'));
+      .style('fill', (r) => (r.water_p < 0.05 ? 'var(--color-fg)' : 'var(--color-panel)')).style('cursor', 'pointer')
+      .on('click', (ev, r) => openSite(r.site)).append('title').text((r) => `${r.site}: water break ${r.water_break}${r.water_p == null ? '' : r.water_p < 0.001 ? ' (p < 0.001)' : ` (p = ${r.water_p.toFixed(3)})`}`);
   }
 
   function drawSpread() {
@@ -791,7 +852,7 @@ dash.calc('summary', {
       .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.85).style('stroke', 'var(--color-panel)').style('stroke-width', 1.2).style('cursor', 'pointer')
       .on('mousemove', (ev, r) => { const [mx, my] = d3.pointer(ev, box); tp.attr('hidden', null).html(''); tp.append('div').attr('class', 't').text(`${r.site} · ${r.sector} · ${r.year}`); tp.append('div').text(`${r.type}: ${r.river}`); tp.style('left', Math.min(W - 240, mx + 10) + 'px').style('top', Math.max(0, my - 40) + 'px'); })
       .on('mouseleave', () => tp.attr('hidden', true))
-      .on('click', (ev, r) => { NF.site = r.site; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      .on('click', (ev, r) => { openSite(r.site); });
     const t = dash.data('spread_sector'), tb = document.querySelector('#spread-table tbody');
     if (t.status === 'ok') tb.replaceChildren(...t.data.map((r) => { const tr = document.createElement('tr'); [r.sector, r.n, r.median, r.pit_first ?? '', r.pit_last ?? '', r.pits].forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i > 0 && i < 5) td.className = 'n'; tr.append(td); }); return tr; }));
   }
@@ -918,11 +979,43 @@ dash.calc('summary', {
     });
   }
 
+  // Sortable tables: click a heading for ascending, again for descending, a third time for the default order.
+  // Empty cells always sort last; site IDs sort by number (E004 before E010, N9 before N10); onsets by first year.
+  NF.sort = {};
+  const sortVal = (r, k) => {
+    const v = r[k];
+    if (v == null || v === '' || (typeof v === 'number' && !Number.isFinite(v))) return null;
+    if (k === 'visual_onset') { const m = String(v).match(/\d{4}/); return m ? +m[0] : null; }
+    return v;
+  };
+  const sortRows = (id, rows) => {
+    const s = NF.sort[id];
+    if (!s) return rows;
+    return rows.slice().sort((a, b) => {
+      const x = sortVal(a, s.key), y = sortVal(b, s.key);
+      if (x == null || y == null) return x == null && y == null ? 0 : x == null ? 1 : -1;
+      return s.dir * (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true }));
+    });
+  };
+  const sortable = (id, redraw) => {
+    const ths = document.querySelectorAll(`#${id} th[data-field]`);
+    ths.forEach((th) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = th.textContent; th.replaceChildren(b);
+      b.addEventListener('click', () => {
+        const k = th.dataset.field, s = NF.sort[id];
+        NF.sort[id] = !s || s.key !== k ? { key: k, dir: 1 } : s.dir === 1 ? { key: k, dir: -1 } : null;
+        ths.forEach((h) => h.removeAttribute('aria-sort'));
+        if (NF.sort[id]) th.setAttribute('aria-sort', NF.sort[id].dir === 1 ? 'ascending' : 'descending');
+        redraw();
+      });
+    });
+  };
+
   function drawScreen() {
     const d = dash.data('screen_table'), tb = document.querySelector('#screen-table tbody');
     if (d.status !== 'ok') return;
     const q = (document.getElementById('screen-q').value || '').toLowerCase();
-    const rows = d.data.filter((r) => !q || `${r.site} ${r.sector} ${r.country} ${r.status} ${r.reason}`.toLowerCase().includes(q));
+    const rows = sortRows('screen-table', d.data.filter((r) => !q || `${r.site} ${r.sector} ${r.country} ${r.status} ${r.reason}`.toLowerCase().includes(q)));
     tb.replaceChildren(...rows.map((r) => {
       const tr = document.createElement('tr'); tr.dataset.key = r.site;
       [r.site, r.sector, r.country, r.n_rec, r.status, r.reason].forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i === 3) td.className = 'n'; tr.append(td); });
@@ -932,7 +1025,7 @@ dash.calc('summary', {
   document.getElementById('screen-q').addEventListener('input', drawScreen);
   document.getElementById('screen-table').addEventListener('click', (ev) => {
     const tr = ev.target.closest('tr[data-key]'); if (!tr) return;
-    const r = dash.data('site_results'); if (r.status === 'ok' && r.data.some((x) => x.site === tr.dataset.key)) { NF.site = tr.dataset.key; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    const r = dash.data('site_results'); if (r.status === 'ok' && r.data.some((x) => x.site === tr.dataset.key)) { openSite(tr.dataset.key); }
   });
   document.getElementById('onset-filter').addEventListener('change', () => drawOnset());
 
@@ -940,7 +1033,7 @@ dash.calc('summary', {
     const d = dash.data('site_table');
     const tb = document.querySelector('#site-table tbody');
     if (d.status !== 'ok') return;
-    const rows = d.data.slice().sort((a, b) => a.lon - b.lon);
+    const rows = sortRows('site-table', d.data.slice().sort((a, b) => a.lon - b.lon));
     tb.replaceChildren(...rows.map((r) => {
       const tr = document.createElement('tr'); tr.dataset.key = r.site;
       const cell = (v, cls) => { const td = document.createElement('td'); td.textContent = v == null ? '' : v; if (cls) td.className = cls; return td; };
@@ -953,9 +1046,17 @@ dash.calc('summary', {
 
   document.getElementById('site-table').addEventListener('click', (ev) => {
     const tr = ev.target.closest('tr[data-key]');
-    if (tr) { NF.site = tr.dataset.key; drawSeries(); document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    if (tr) { openSite(tr.dataset.key); }
   });
-  document.getElementById('site-pick').addEventListener('change', (ev) => { NF.site = ev.target.value; drawSeries(); });
+  sortable('site-table', drawTable);
+  sortable('screen-table', drawScreen);
+  document.getElementById('site-pick').addEventListener('change', (ev) => openSite(ev.target.value, false));
+  document.getElementById('site-link').addEventListener('click', async (ev) => {
+    const b = ev.currentTarget, url = location.href.split('#')[0] + '#site=' + NF.site;
+    setHash(NF.site);
+    try { await navigator.clipboard.writeText(url); b.textContent = 'Link copied'; } catch (e) { b.textContent = 'Copy the address bar to share'; }
+    setTimeout(() => { b.textContent = 'Copy link to this site'; }, 2000);
+  });
 
   dash.onData(() => {
     const s = dash.data('summary');
@@ -965,7 +1066,10 @@ dash.calc('summary', {
       document.getElementById('takeaway').textContent = v.takeaway;
       document.querySelectorAll('[data-source="summary"][data-field]').forEach((el) => { if (el.id !== 'takeaway') el.textContent = d3.format(',')(v[el.dataset.field]); });
     }
+    const sr = dash.data('site_results');
+    if (deepLink && sr.status === 'ok' && !sr.data.some((x) => x.site === deepLink)) { deepLink = null; NF.site = 'E076'; history.replaceState(null, '', location.pathname + location.search); }
     draw(); drawTimeline(); drawOnset(); drawSpread(); drawClasses(); drawSectors(); drawSeries(); drawTable(); drawScreen();
+    if (deepLink && dash.ready()) { deepLink = null; requestAnimationFrame(() => document.getElementById('site-card').scrollIntoView({ block: 'start' })); }
   });
 })();
 </script>
@@ -973,7 +1077,7 @@ dash.calc('summary', {
 <footer class="nf-foot">
   <div>Md Sadiul Alam Chyon, Department of Geography and Geographic Information Science, University of Illinois Urbana-Champaign. Doctoral research supervised by Jim Best. Chapter 4 of the dissertation, in preparation; results are provisional and unpublished.</div>
   <div>Method: one clear January Landsat Collection 2 scene per dry season (1988 to 2025) at each site; water (MNDWI &gt; 0), sand (NDVI &lt; 0.25) and vegetation (NDVI &ge; 0.30) inside a fixed river outline; onset from the January panels and the Pettitt test. Rivers: HydroRIVERS v1.0. Borders: Natural Earth. Imagery: U.S. Geological Survey Landsat.</div>
-  <div>Data and code: <a href="https://github.com/sadiulchyon/northern-fringe-extraction-atlas">github.com/sadiulchyon/northern-fringe-extraction-atlas</a>. Data as of 22 October 2026.</div>
+  <div>Data and code: <a href="https://github.com/sadiulchyon/northern-fringe-extraction-atlas">github.com/sadiulchyon/northern-fringe-extraction-atlas</a>. Data as of 26 October 2026.</div>
 </footer>
 </div>
 </body>
