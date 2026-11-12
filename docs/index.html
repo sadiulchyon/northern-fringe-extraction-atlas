@@ -171,27 +171,102 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
 [data-dash-source-state=empty] { color: transparent; }
 @media (max-width: 600px) { .nf-table .hide-n { display: none; } }
+
+/* ---- Layout and readability refinements ---- */
+.nf { --nf-accent: #a8641c; --nf-s2w: #0f8b8d; --nf-nav-h: 46px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nf { --nf-accent: #e0a25a; --nf-s2w: #3cc1c3; } }
+.nf-kicker { font-size: var(--cds-font-size-caption); letter-spacing: .08em; text-transform: uppercase; color: var(--nf-accent); font-weight: 600; margin: 0 0 6px; }
+.nf-head h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; letter-spacing: -.01em; }
+.nf-head .nf-sub-title { font-family: var(--font-anthropic-serif); font-size: clamp(17px, 2.2vw, 20px); color: var(--color-fg-muted); margin: 8px 0 0; max-width: 60ch; }
+.nf-head #takeaway { color: var(--color-fg); font-size: 15.5px; line-height: 1.6; margin-top: 14px; max-width: 72ch; }
+.nf-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 12px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.nf-meta a { color: inherit; }
+.nf-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--nf-accent); color: var(--nf-accent); font-weight: 600; }
+.nf-nav { position: sticky; top: 0; z-index: 20; margin: 0 -16px; padding: 0 16px; height: var(--nf-nav-h); display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-border-line); }
+.nf-nav::-webkit-scrollbar { display: none; }
+.nf-nav a { flex: none; font-size: 13px; color: var(--color-fg-muted); text-decoration: none; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.nf-nav a:hover { color: var(--color-fg); background: var(--cds-chart-grid); }
+.nf-nav a[aria-current="true"] { color: var(--color-fg); background: var(--color-panel); box-shadow: 0 0 0 1px var(--color-border-line); }
+.nf-nav a:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 1px; }
+.nf-card, .nf-tiles { scroll-margin-top: calc(var(--nf-nav-h) + 12px); }
+.nf-card:focus { outline: none; }
+.nf-tile { position: relative; overflow: hidden; }
+.nf-tile::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--nf-accent); opacity: .7; }
+.nf-tile .num { font-size: 36px; line-height: 1.15; margin: 2px 0; }
+.nf-card { padding: 22px; }
+.nf-card h2 { font-family: var(--font-anthropic-serif); font-weight: 600; font-size: 21px; line-height: 1.25; letter-spacing: -.005em; }
+.nf-card .note { font-size: 13.5px; line-height: 1.55; max-width: 88ch; margin: 6px 0 14px; }
+.nf-legendbox { display: grid; gap: 8px; padding: 10px 12px; margin-bottom: 12px; border-radius: var(--cds-radius); background: color-mix(in srgb, var(--color-fg) 3%, var(--color-panel)); border: 1px solid var(--color-border-line); }
+.nf-legendbox .nf-legend { margin: 0; align-items: center; position: relative; padding-left: 9rem; }
+.nf-leglab { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-fg-muted); font-weight: 600; }
+.nf-legendbox .nf-leglab { position: absolute; left: 0; top: 4px; }
+.nf-dia { width: 9px; height: 9px; transform: rotate(45deg); display: inline-block; margin: 0 2px; }
+.nf-legend button { padding: 2px 4px; border-radius: 4px; }
+.nf-legend button:hover { background: var(--cds-chart-grid); }
+.nf-mapctl { position: absolute; top: 10px; left: 10px; z-index: 4; display: flex; flex-direction: column; gap: 6px; }
+.nf-mapctl button { width: 32px; height: 32px; display: grid; place-items: center; font: 600 17px/1 var(--font-anthropic-sans); color: var(--color-fg); background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); cursor: pointer; padding: 0; }
+.nf-mapctl button:hover { border-color: var(--color-fg-muted); }
+.nf-mapctl button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; }
+.nf-mapctl svg { width: 16px; height: 16px; }
+.nf-maphint { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: none; background: rgba(0,0,0,.35); color: #fff; font-size: 15px; font-weight: 500; text-align: center; padding: 16px; opacity: 0; transition: opacity .25s; border-radius: var(--cds-radius); }
+.nf-maphint.on { opacity: 1; }
+.nf-map, .nf-tlmap { border-radius: var(--cds-radius); overflow: hidden; border: 1px solid var(--color-border-line); }
+.nf-ctl { gap: 8px 10px; margin-bottom: 10px; font-size: 13px; }
+.nf-ctl label { color: var(--color-fg-muted); }
+.nf-ctl select, .nf-ctl input[type=search] { font: inherit; font-size: 13.5px; padding: 5px 8px; border: 1px solid var(--color-border-line); border-radius: 6px; background: var(--color-panel); color: var(--color-fg); min-width: 0; max-width: 100%; }
+#site-pick { flex: 1 1 16rem; max-width: 30rem; }
+.nf-btn { font-size: 13px; padding: 5px 12px; border-radius: 6px; margin-bottom: 0; transition: border-color .15s, background .15s; }
+.nf-btn:hover { border-color: var(--color-fg-muted); }
+.nf-tlctl { padding: 10px 12px; border-radius: var(--cds-radius); background: color-mix(in srgb, var(--color-fg) 3%, var(--color-panel)); border: 1px solid var(--color-border-line); }
+#tl-play { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); min-width: 4.5rem; font-weight: 600; }
+.nf-tlctl input[type=range] { max-width: none; }
+.nf-tlyear { font-size: 26px; line-height: 1; }
+.nf-sitenote { line-height: 1.55; }
+.nf-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--color-fg-muted); }
+.nf-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-fg) 2%, var(--color-panel)); }
+.nf-table td { line-height: 1.45; }
+.nf-tablebox { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
+#site-table td.note { min-width: 22rem; }
+#site-table td.note > div { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+#site-table td.river { min-width: 11rem; }
+#screen-table td:last-child { min-width: 14rem; }
+.nf-foot { margin-top: 8px; }
+@media (max-width: 600px) {
+  .nf-card { padding: 16px; }
+  .nf-legendbox .nf-legend { padding-left: 0; }
+  .nf-legendbox .nf-leglab { position: static; width: 100%; }
+  .nf-tile .num { font-size: 30px; }
+}
 </style>
 
 <div class="nf">
   <header class="nf-head" id="top">
+    <p class="nf-kicker">Bangladesh · northern border · 1988–2025</p>
     <h1>Northern Fringe Extraction Atlas</h1>
+    <p class="nf-sub-title">Sand and gravel extraction reconstructed at <span data-source="summary" data-field="analysed">343</span> sites from one January Landsat scene per dry season.</p>
     <p id="takeaway" data-source="summary" data-field="takeaway" class="dash-skeleton">—</p>
+    <div class="nf-meta"><span class="nf-badge">Provisional</span><span>Chapter 4 of a doctoral dissertation, University of Illinois Urbana-Champaign</span><a href="https://github.com/sadiulchyon/northern-fringe-extraction-atlas">Data and code</a></div>
   </header>
+
+  <nav class="nf-nav" aria-label="Sections">
+    <a href="#map-card">Map</a><a href="#timeline-card">Year by year</a><a href="#onset-card">Onset</a><a href="#spread-card">Spread</a><a href="#class-card">By sector</a><a href="#site-card">Site detail</a><a href="#table-card">Sites table</a><a href="#screen-card">Screening</a>
+  </nav>
 
   <section class="nf-tiles" id="tiles">
     <div class="nf-tile"><div class="lab">Inventory points</div><div class="num" data-source="summary" data-field="points">—</div><div class="sub">mapped on Google Earth imagery, 2011–2022</div></div>
-    <div class="nf-tile"><div class="lab">Extraction sites</div><div class="num" data-source="summary" data-field="sites">—</div><div class="sub">extraction records clustered at 2 km</div></div>
+    <div class="nf-tile"><div class="lab">Inventory site windows</div><div class="num" data-source="summary" data-field="sites">—</div><div class="sub">extraction records clustered at 2 km</div></div>
     <div class="nf-tile"><div class="lab">Sites analysed</div><div class="num" data-source="summary" data-field="analysed">—</div><div class="sub">January low-flow Landsat, 1988–2025</div></div>
     <div class="nf-tile"><div class="lab">Pit extraction dated</div><!-- in-channel and floodplain pits --><div class="num" data-source="summary" data-field="pit">—</div><div class="sub">in-channel pits and floodplain pit fields</div></div>
   </section>
 
   <section class="nf-card" id="map-card">
     <h2>Inventory and sites on the Bangladesh map</h2>
-    <div class="note">Points are the <span data-source="summary" data-field="points">411</span> inventory records; boxes are the <span data-source="summary" data-field="sites">83</span> inventory site windows and the <span data-source="summary" data-field="added">260</span> added sites, outlined by their low-flow result. Rivers are HydroRIVERS reaches with mean flow of 150 m³/s or more, drawn wider for larger rivers; borders are Natural Earth. The map opens on the northern border belt: scroll or pinch to zoom, drag to pan, click a site for its details. Click a legend entry to hide or show that label group or result class.</div>
-    <div class="nf-legend" id="legend-groups" data-source="inventory"></div>
-    <div class="nf-legend" id="legend-types" data-source="site_results"></div>
-    <div class="nf-ctl"><button type="button" id="map-reset" class="nf-btn">Show all of Bangladesh</button></div>
+    <div class="note">Points are the <span data-source="summary" data-field="points">411</span> inventory records; boxes are the <span data-source="summary" data-field="sites">83</span> inventory site windows and the <span data-source="summary" data-field="added">260</span> added sites, outlined by their low-flow result. Rivers are HydroRIVERS reaches with mean flow of 150 m³/s or more, drawn wider for larger rivers; borders are Natural Earth. The map opens on the northern border belt: use the + and − buttons, Ctrl or ⌘ with the scroll wheel, or two fingers on a touch screen to zoom; drag to pan; click a site for its details. Click a legend entry to hide or show that result class or label group.</div>
+    <div class="nf-legendbox">
+      <div class="nf-legend" id="legend-types" data-source="site_results"></div>
+      <div class="nf-legend" id="legend-groups" data-source="inventory"></div>
+    </div>
     <div class="nf-box nf-map dash-skeleton" id="map" data-source="inventory sites site_results countries rivers labels site_table series screening"></div>
   </section>
 
@@ -240,6 +315,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
     <section class="nf-card" id="sector-card">
       <h2>What the inventory records, by sector</h2>
       <div class="note">Count of inventory points per sector (S1 Panchagarh in the west to S6 Sylhet in the east), split by label.</div>
+      <div class="nf-legend" id="legend-sectors"></div>
       <div class="nf-box nf-chart dash-skeleton" id="sectors" data-source="by_sector"></div>
     </section>
   </div>
@@ -299,6 +375,8 @@ window.NF = {
   },
   hidden: new Set(),
   hiddenTypes: new Set(),
+  // Site-detail series: water, sand, baseline sand now water (teal, so it is not read as vegetation green)
+  seriesColor: ['#2b6cb0', '#c9a227', 'var(--nf-s2w)'],
   site: 'E076'
 };
 
@@ -425,6 +503,7 @@ dash.calc('summary', {
   function legends(inv, res) {
     const lg = document.getElementById('legend-groups');
     lg.replaceChildren();
+    const gl = document.createElement('span'); gl.className = 'nf-leglab'; gl.textContent = 'Inventory points'; lg.append(gl);
     NF.groups.forEach((g, i) => {
       const n = inv.filter((r) => r.group === g).length;
       const b = document.createElement('button');
@@ -438,17 +517,14 @@ dash.calc('summary', {
     });
     const lt = document.getElementById('legend-types');
     lt.replaceChildren();
-    const mkl = document.createElement('span'); mkl.style.display = 'inline-flex'; mkl.style.alignItems = 'center'; mkl.style.gap = '6px';
-    const dia = document.createElement('span'); dia.style.cssText = 'width:9px;height:9px;transform:rotate(45deg);display:inline-block;background:var(--color-fg)';
-    const mt = document.createElement('span'); mt.textContent = 'Sites by result:'; mt.style.fontWeight = '600';
-    mkl.append(dia, mt); lt.append(mkl);
+    const mt = document.createElement('span'); mt.className = 'nf-leglab'; mt.textContent = 'Site results'; lt.append(mt);
     const scr = dash.data('screening'), scrRows = scr.status === 'ok' ? scr.data : [];
     NF.types.forEach((ty) => {
       const n = ty === 'Skipped' ? scrRows.filter((x) => x.status === 'Skipped' && !res.some((r) => r.site === x.site)).length : res.filter((r) => r.type === ty).length;
       if (!n) return;
       const b = document.createElement('button'); b.type = 'button';
       b.setAttribute('aria-pressed', NF.hiddenTypes.has(ty) ? 'false' : 'true');
-      const sq = document.createElement('span'); sq.className = 'nf-sq'; sq.style.borderColor = NF.typeColor[ty];
+      const sq = document.createElement('span'); sq.className = 'nf-dia'; sq.style.background = NF.typeColor[ty];
       const t = document.createElement('span'); t.textContent = `${ty} (${n})`;
       b.append(sq, t);
       b.addEventListener('click', () => { NF.hiddenTypes.has(ty) ? NF.hiddenTypes.delete(ty) : NF.hiddenTypes.add(ty); draw(); });
@@ -488,7 +564,7 @@ dash.calc('summary', {
     const Y = (lat) => oy + (yE[1] - lat) * sc;
     const path = (s) => 'M' + s.split(';').map((p) => { const q = p.split(','); return X(+q[0]).toFixed(1) + ',' + Y(+q[1]).toFixed(1); }).join('L');
     box.replaceChildren();
-    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).style('display', 'block').style('touch-action', 'none');
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).style('display', 'block').style('touch-action', 'pan-x pan-y');
     svg.append('rect').attr('width', W).attr('height', H).style('fill', 'var(--nf-sea)');
     const g = svg.append('g');
     const base = g.append('g');
@@ -554,9 +630,11 @@ dash.calc('summary', {
       .on('click', (ev, d) => { if (res.some((r) => r.site === d.site_id)) { openSite(d.site_id); } });
     const st = dash.data('site_table'), se = dash.data('series');
     const anal = st.status === 'ok' ? st.data.filter((r) => Number.isFinite(r.slon) && !NF.hiddenTypes.has(r.type)) : [];
-    const sym = d3.symbol(d3.symbolDiamond, 150);
-    const mk = g.append('g').selectAll('path').data(anal).join('path').attr('class', 'nf-mk').attr('d', sym)
-      .style('fill', (d) => NF.typeColor[d.type]).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5).style('cursor', 'pointer')
+    // No-signal sites are drawn smaller, fainter and underneath, so the sites with a change stand out.
+    const quiet = (d) => d.type === 'No signal';
+    const sym = (d) => d3.symbol(d3.symbolDiamond, quiet(d) ? 70 : 150)();
+    const mk = g.append('g').selectAll('path').data(anal.slice().sort((a, b) => quiet(b) - quiet(a))).join('path').attr('class', 'nf-mk').attr('d', sym)
+      .style('fill', (d) => NF.typeColor[d.type]).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5).style('fill-opacity', (d) => (quiet(d) ? 0.55 : 1)).style('cursor', 'pointer')
       .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (d) => `${d.site}, ${d.type}: open details`);
     const mkl = labs.append('g').selectAll('text').data(anal).join('text').attr('class', 'nf-lab nf-mklab')
       .attr('data-lon', (d) => d.slon).attr('data-lat', (d) => d.slat).attr('dx', 9).attr('dy', 4).text((d) => d.site)
@@ -649,7 +727,19 @@ dash.calc('summary', {
       .on('mousemove', (ev, d) => show(ev, (t) => { t.append('div').attr('class', 't').text(`${d.site} · ${d.type}`); t.append('div').text('Click for details'); }))
       .on('mouseleave', () => tp.attr('hidden', true));
     rects.on('click', (ev, d) => { const a = anal.find((r) => r.site === d.site_id); if (a) openInfo(a); });
-    const z = d3.zoom().scaleExtent([1, 60]).translateExtent([[0, 0], [W, H]]).on('zoom', (ev) => {
+    // The page keeps the plain scroll wheel and one-finger swipes, so scrolling past the map never gets stuck in it:
+    // the map zooms with Ctrl/⌘ + wheel (and trackpad pinch), two fingers on touch screens, double-click, or the buttons.
+    const hint = document.createElement('div'); hint.className = 'nf-maphint'; hint.setAttribute('aria-hidden', 'true'); box.append(hint);
+    let hintT = null;
+    const showHint = (msg) => { hint.textContent = msg; hint.classList.add('on'); clearTimeout(hintT); hintT = setTimeout(() => hint.classList.remove('on'), 1100); };
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    svg.on('wheel.hint', (ev) => { if (!ev.ctrlKey && !ev.metaKey) showHint(`Hold ${mac ? '⌘' : 'Ctrl'} and scroll to zoom the map`); })
+      .on('touchmove.hint', (ev) => { if (ev.touches.length === 1) showHint('Use two fingers to move the map'); }, { passive: true });
+    const z = d3.zoom().scaleExtent([1, 60]).translateExtent([[0, 0], [W, H]])
+      .filter((ev) => (ev.type === 'wheel' ? ev.ctrlKey || ev.metaKey : ev.type === 'touchstart' ? ev.touches.length > 1 : !ev.ctrlKey && !ev.button))
+      // Trackpad pinches send small Ctrl-wheel deltas and keep d3's 10x boost; a Ctrl + mouse-wheel notch zooms about 1.3x.
+      .wheelDelta((ev) => -ev.deltaY * (ev.deltaMode === 1 ? 0.05 : ev.deltaMode ? 1 : 0.002) * (ev.ctrlKey && Math.abs(ev.deltaY) < 40 ? 10 : 2))
+      .on('zoom', (ev) => {
       zoomT = ev.transform; g.attr('transform', zoomT);
       pts.attr('r', 3 / Math.sqrt(zoomT.k)).style('stroke-width', 0.6 / zoomT.k);
       rects.style('stroke-width', (d) => (['Not yet run', 'Skipped'].includes(typeOf(d.site_id, res)) ? 1 : 2.5) / zoomT.k);
@@ -664,8 +754,15 @@ dash.calc('summary', {
     if (!zoomT) { const kk = 1.9; zoomT = d3.zoomIdentity.translate(W / 2 - kk * X(90.4), H * 0.3 - kk * Y(25.4)).scale(kk); }
     svg.call(z).call(z.transform, zoomT);
     if (NF.open) { const a = anal.find((r) => r.site === NF.open); if (a) openInfo(a); }
-    const reset = document.getElementById('map-reset');
-    if (reset) reset.onclick = () => svg.transition().duration(400).call(z.transform, d3.zoomIdentity);
+    const ctl = document.createElement('div'); ctl.className = 'nf-mapctl';
+    [['+', 'Zoom in', () => svg.transition().duration(300).call(z.scaleBy, 1.6)],
+      ['−', 'Zoom out', () => svg.transition().duration(300).call(z.scaleBy, 1 / 1.6)],
+      ['<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>', 'Show all of Bangladesh', () => svg.transition().duration(400).call(z.transform, d3.zoomIdentity)]
+    ].forEach(([lab, title, fn]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.innerHTML = lab; b.title = title; b.setAttribute('aria-label', title);
+      b.addEventListener('click', fn); ctl.append(b);
+    });
+    box.append(ctl);
   }
 
   NF.year = 2025; NF.tl = null;
@@ -774,31 +871,40 @@ dash.calc('summary', {
     const sig = ['Pit extraction', 'Floodplain pits', 'Possible dredging', 'Bar loss'];
     const rows = d.data.filter((r) => mode === 'all' || sig.includes(r.type)).sort((a, b) => a.lon - b.lon);
     const ev = dash.data('events'); const evs = ev.status === 'ok' ? ev.data.map((e, i) => ({ ...e, n: i + 1, year: +e.year })) : [];
-    const W = box.clientWidth, rowH = 22;
+    // Compact rows when every analysed site is shown, so the chart stays a manageable height.
+    const dense = rows.length > 120, rowH = dense ? 13 : 20, fs = dense ? 10 : 12;
+    const W = box.clientWidth;
     box.replaceChildren();
     const svg = d3.select(box).append('svg').attr('width', '100%');
-    const probe = svg.append('text').style('font-size', '12px').text('E000 S6');
-    const lw = probe.node().getComputedTextLength() + 10; probe.remove();
-    const m = { t: 22, r: 12, b: 26, l: lw };
+    const probe = svg.append('text').style('font-size', fs + 'px').text('E000 S6');
+    const lw = probe.node().getComputedTextLength() + 12; probe.remove();
+    const m = { t: 46, r: 18, b: 28, l: lw };
     const H = m.t + m.b + rows.length * rowH;
     svg.attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
     box.style.minHeight = H + 'px';
     const x = d3.scaleLinear([1988, 2025], [m.l, W - m.r]);
     const y = d3.scaleBand(rows.map((r) => r.site), [m.t, H - m.b]).padding(0.3);
-    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 4 : 8).tickFormat('').tickSize(-(H - m.b - m.t))).attr('font-size', null).attr('font-family', null);
-    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(W < 420 ? 4 : 8).tickFormat(d3.format('d'))).attr('font-size', null).attr('font-family', null);
+    // Alternate shading per sector, so the west-to-east groups read at a glance.
+    d3.groups(rows, (r) => r.sector).forEach(([sec, rr], i) => {
+      if (i % 2) svg.append('rect').attr('x', 0).attr('width', W).attr('y', y(rr[0].site) - y.step() * 0.15)
+        .attr('height', y.step() * rr.length).style('fill', 'var(--cds-chart-grid)').style('opacity', 0.6);
+    });
+    const tk = W < 420 ? 4 : 8;
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(tk).tickFormat('').tickSize(-(H - m.b - m.t))).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(tk).tickFormat(d3.format('d')).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${m.t})`).call(d3.axisTop(x).ticks(tk).tickFormat(d3.format('d')).tickSizeOuter(0)).attr('font-size', null).attr('font-family', null);
     const eg = svg.append('g');
     evs.forEach((e) => {
-      eg.append('line').attr('x1', x(e.year + 0.5)).attr('x2', x(e.year + 0.5)).attr('y1', m.t - 4).attr('y2', H - m.b)
+      eg.append('line').attr('x1', x(e.year + 0.5)).attr('x2', x(e.year + 0.5)).attr('y1', m.t - 26).attr('y2', H - m.b)
         .style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '4 3');
-      eg.append('text').attr('x', x(e.year + 0.5)).attr('y', m.t - 8 - (evs.filter((o) => o.year === e.year && o.n < e.n).length * 0)).attr('text-anchor', 'middle')
+      eg.append('text').attr('x', x(e.year + 0.5)).attr('y', m.t - 30).attr('text-anchor', 'middle')
         .attr('dx', evs.filter((o) => o.year === e.year && o.n < e.n).length * 10).text(e.n)
         .style('fill', 'var(--color-fg-muted)').style('font-size', '10px').append('title').text(`${e.year}: ${e.label}`);
     });
     const el = document.getElementById('events-list'); el.replaceChildren();
     evs.forEach((e) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = e.source; a.target = '_blank'; a.rel = 'noopener'; a.textContent = `${e.year}: ${e.label} (${e.scope})`; li.append(a); el.append(li); });
-    svg.append('g').selectAll('text').data(rows).join('text').attr('x', 4).attr('y', (r) => y(r.site) + y.bandwidth() / 2 + 4)
-      .text((r) => `${r.site} ${r.sector}`).style('fill', 'var(--color-fg)').style('font-size', '12px').style('cursor', 'pointer')
+    svg.append('g').selectAll('text').data(rows).join('text').attr('x', 4).attr('y', (r) => y(r.site) + y.bandwidth() / 2 + fs * 0.35)
+      .text((r) => `${r.site} ${r.sector}`).style('fill', 'var(--color-fg)').style('font-size', fs + 'px').style('cursor', 'pointer')
       .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => `${r.site}, ${r.type}: open site detail`)
       .on('click', (ev, r) => openSite(r.site))
       .on('keydown', (ev, r) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openSite(r.site); } });
@@ -814,7 +920,7 @@ dash.calc('summary', {
       .style('fill', (r) => NF.typeColor[r.type]).style('fill-opacity', 0.55).style('cursor', 'pointer')
       .on('click', (ev, r) => openSite(r.site)).append('title').text((r) => `${r.site} · ${r.river}: ${r.type}, onset ${r.visual_onset}`);
     svg.append('g').selectAll('circle').data(rows.filter((r) => r.water_break)).join('circle')
-      .attr('cx', (r) => x(r.water_break)).attr('cy', (r) => y(r.site) + y.bandwidth() / 2).attr('r', 4)
+      .attr('cx', (r) => x(r.water_break)).attr('cy', (r) => y(r.site) + y.bandwidth() / 2).attr('r', dense ? 3 : 4)
       .style('stroke', 'var(--color-fg)').style('stroke-width', 1.5)
       .style('fill', (r) => (r.water_p < 0.05 ? 'var(--color-fg)' : 'var(--color-panel)')).style('cursor', 'pointer')
       .on('click', (ev, r) => openSite(r.site)).append('title').text((r) => `${r.site}: water break ${r.water_break}${r.water_p == null ? '' : r.water_p < 0.001 ? ' (p < 0.001)' : ` (p = ${r.water_p.toFixed(3)})`}`);
@@ -861,6 +967,8 @@ dash.calc('summary', {
     const d = dash.data('by_sector'), box = document.getElementById('sectors');
     if (d.status !== 'ok') return;
     box.classList.remove('dash-skeleton');
+    const lgs = document.getElementById('legend-sectors'); lgs.replaceChildren();
+    NF.groups.forEach((g, i) => { if (!d.data.some((r) => r.group === g && r.n)) return; const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px'; const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = dash.colors[i]; const tx = document.createElement('span'); tx.textContent = g; s.append(sw, tx); lgs.append(s); });
     const sectors = Array.from(new Set(d.data.map((r) => r.sector))).sort();
     const stack = d3.stack().keys(NF.groups).value((s, k) => (d.data.find((r) => r.sector === s[0] && r.group === k) || { n: 0 }).n);
     const series = stack(sectors.map((s) => [s]));
@@ -873,7 +981,7 @@ dash.calc('summary', {
     svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat('')).attr('font-size', null).attr('font-family', null);
     svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5)).attr('font-size', null).attr('font-family', null);
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x)).attr('font-size', null).attr('font-family', null);
-    const bw = Math.min(32, x.bandwidth());
+    const bw = Math.min(56, x.bandwidth());
     const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
     series.forEach((s, i) => {
       svg.append('g').selectAll('rect').data(s).join('rect')
@@ -911,10 +1019,10 @@ dash.calc('summary', {
     const lg = document.getElementById('legend-series'); lg.replaceChildren();
     keys.forEach(([k, lab], i) => {
       const s = document.createElement('span'); s.style.display = 'inline-flex'; s.style.alignItems = 'center'; s.style.gap = '6px';
-      const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = dash.colors[i];
+      const sw = document.createElement('span'); sw.className = 'nf-sw'; sw.style.background = NF.seriesColor[i];
       const t = document.createElement('span'); t.textContent = lab; s.append(sw, t); lg.append(s);
     });
-    const W = box.clientWidth, H = 300, m = { t: 10, r: 12, b: 26, l: 44 };
+    const W = box.clientWidth, H = 300, m = { t: 10, r: 22, b: 26, l: 44 };
     box.replaceChildren();
     const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
     const x = d3.scaleLinear([1988, 2025], [m.l, W - m.r]);
@@ -926,9 +1034,9 @@ dash.calc('summary', {
     const ok = rows.filter((q) => !q.flag);
     keys.forEach(([k], i) => {
       svg.append('path').datum(ok).attr('d', d3.line().x((q) => x(q.season)).y((q) => y(q[k])))
-        .style('fill', 'none').style('stroke', dash.colors[i]).style('stroke-width', 2).style('stroke-linecap', 'round').style('stroke-linejoin', 'round');
+        .style('fill', 'none').style('stroke', NF.seriesColor[i]).style('stroke-width', 2).style('stroke-linecap', 'round').style('stroke-linejoin', 'round');
       svg.append('g').selectAll('circle').data(rows).join('circle').attr('cx', (q) => x(q.season)).attr('cy', (q) => y(q[k])).attr('r', 3)
-        .style('fill', (q) => (q.flag ? 'var(--color-panel)' : dash.colors[i])).style('stroke', dash.colors[i]).style('stroke-width', 1.2);
+        .style('fill', (q) => (q.flag ? 'var(--color-panel)' : NF.seriesColor[i])).style('stroke', NF.seriesColor[i]).style('stroke-width', 1.2);
     });
     const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
     const rule = svg.append('line').style('stroke', 'var(--cds-chart-reference)').attr('y1', m.t).attr('y2', H - m.b).attr('hidden', true);
@@ -942,7 +1050,7 @@ dash.calc('summary', {
         tp.attr('hidden', null).html('');
         tp.append('div').attr('class', 't').text(`Season ${yr}${q.flag ? ' · ' + q.flag + ' (excluded)' : ''}`);
         keys.forEach(([k, lab], i) => {
-          const l = tp.append('div'); l.append('span').attr('class', 'nf-sw').style('background', dash.colors[i]).style('margin-right', '6px');
+          const l = tp.append('div'); l.append('span').attr('class', 'nf-sw').style('background', NF.seriesColor[i]).style('margin-right', '6px');
           l.append('span').text(`${lab}: ${q[k].toFixed(1)} ha`);
         });
         tp.style('left', Math.min(W - 220, mx + 12) + 'px').style('top', Math.max(0, my - 60) + 'px');
@@ -966,7 +1074,7 @@ dash.calc('summary', {
     svg.append('g').attr('class', 'grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat('')).attr('font-size', null).attr('font-family', null);
     svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5)).attr('font-size', null).attr('font-family', null);
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x)).attr('font-size', null).attr('font-family', null);
-    const bw = Math.min(32, x.bandwidth());
+    const bw = Math.min(56, x.bandwidth());
     const tp = d3.select(box).append('div').attr('class', 'nf-tip').attr('hidden', true);
     series.forEach((s) => {
       svg.append('g').selectAll('rect').data(s).join('rect')
@@ -1037,9 +1145,10 @@ dash.calc('summary', {
     tb.replaceChildren(...rows.map((r) => {
       const tr = document.createElement('tr'); tr.dataset.key = r.site;
       const cell = (v, cls) => { const td = document.createElement('td'); td.textContent = v == null ? '' : v; if (cls) td.className = cls; return td; };
-      tr.append(cell(r.site), cell(r.sector), cell(r.river), cell(r.type), cell(r.visual_onset),
+      const noteCell = (v) => { const td = document.createElement('td'); td.className = 'note'; const dv = document.createElement('div'); dv.textContent = v || ''; td.title = v || ''; td.append(dv); return td; };
+      tr.append(cell(r.site), cell(r.sector), cell(r.river, 'river'), cell(r.type), cell(r.visual_onset),
         cell(r.water_break, 'n hide-n'), cell(r.water_p == null ? '' : r.water_p < 0.001 ? '<0.001' : r.water_p.toFixed(3), 'n hide-n'),
-        cell(r.aoi_ha == null ? '' : d3.format(',.0f')(r.aoi_ha), 'n hide-n'), cell(r.note));
+        cell(r.aoi_ha == null ? '' : d3.format(',.0f')(r.aoi_ha), 'n hide-n'), noteCell(r.note));
       return tr;
     }));
   }
@@ -1048,6 +1157,34 @@ dash.calc('summary', {
     const tr = ev.target.closest('tr[data-key]');
     if (tr) { openSite(tr.dataset.key); }
   });
+  // Section nav: jump without touching the #site= address, and mark the section in view.
+  (function () {
+    const links = [...document.querySelectorAll('.nf-nav a')];
+    links.forEach((a) => a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'start' }); t.focus({ preventScroll: true }); }
+    }));
+    const targets = links.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    targets.forEach((t) => t.setAttribute('tabindex', '-1'));
+    let last;
+    const mark = () => {
+      const line = 120;
+      let cur = null;
+      targets.forEach((t) => { if (t.getBoundingClientRect().top <= line) cur = t; });
+      if (cur === last) return;
+      last = cur;
+      links.forEach((a) => {
+        const on = cur && a.getAttribute('href') === '#' + cur.id;
+        if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+        if (on && a.scrollIntoView && a.parentElement.scrollWidth > a.parentElement.clientWidth) a.parentElement.scrollTo({ left: a.offsetLeft - 16, behavior: 'smooth' });
+      });
+    };
+    let raf = 0;
+    window.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; mark(); }); }, { passive: true });
+    mark();
+  })();
+
   sortable('site-table', drawTable);
   sortable('screen-table', drawScreen);
   document.getElementById('site-pick').addEventListener('change', (ev) => openSite(ev.target.value, false));
