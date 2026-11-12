@@ -45,7 +45,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
     inventory: ['data/inventory.csv', 'csv'], sites: ['data/sites.csv', 'csv'], site_results: ['data/site_results.csv', 'csv'],
     onset: ['data/onset.csv', 'csv'], series: ['data/series.csv', 'csv'],
     screening: ['data/screening.csv', 'csv'], events: ['data/events.csv', 'csv'], countries: ['data/countries.json', 'json'],
-    rivers: ['data/rivers.json', 'json'], labels: ['data/labels.csv', 'csv']
+    rivers: ['data/rivers.json', 'json'], labels: ['data/labels.csv', 'csv'], media: ['data/media.json', 'json']
   };
   const LAZY = { chips: ['data/chips.json', 'json'] };
   const store = {}, calcs = {}, memo = {}, cbs = [], pending = {};
@@ -121,6 +121,9 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 .nf-legend button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--color-fg); }
 .nf-legend button[aria-pressed="false"] { opacity: .35; }
 .nf-legend .nf-showall { text-decoration: underline; color: var(--color-fg-muted); }
+.nf-ringkey { display: inline-flex; align-items: center; gap: 6px; color: var(--color-fg); text-decoration: none; padding: 2px 4px; border-radius: 4px; }
+.nf-ringkey:hover { background: var(--cds-chart-grid); text-decoration: underline; }
+.nf-ringsw { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--nf-accent); box-sizing: border-box; display: inline-block; }
 .nf-table th button { all: unset; cursor: pointer; }
 .nf-table th button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; border-radius: 3px; }
 .nf-table th[aria-sort="ascending"] button::after { content: " ▲"; font-size: .8em; }
@@ -232,6 +235,68 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 #site-table td.river { min-width: 11rem; }
 #screen-table td:last-child { min-width: 14rem; }
 .nf-foot { margin-top: 8px; }
+/* Field media: player, playlist, photo groups, site strips, lightbox */
+.nf-media { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 820px) { .nf-media { grid-template-columns: 1fr; } }
+.nf-player { margin: 0; display: grid; gap: 10px; }
+.nf-player .stage { position: relative; background: #000; border-radius: var(--cds-radius); overflow: hidden; aspect-ratio: 16 / 9; display: grid; place-items: center; }
+.nf-player video, .nf-player .stage img { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+.nf-player figcaption { display: grid; gap: 6px; }
+.nf-player h3 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 600; font-size: 19px; line-height: 1.25; }
+.nf-mmeta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12.5px; color: var(--color-fg-muted); }
+.nf-kind { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; color: var(--nf-accent); border: 1px solid currentColor; }
+.nf-player p { margin: 0; font-size: 14px; line-height: 1.55; max-width: 70ch; }
+.nf-credit { font-size: 12px; color: var(--color-fg-muted); }
+.nf-sitelinks { display: flex; flex-wrap: wrap; gap: 6px; }
+.nf-sitelinks button { font: inherit; font-size: 12.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+.nf-sitelinks button:hover { border-color: var(--color-fg-muted); }
+.nf-sitelinks button b { font-weight: 600; margin-right: 4px; }
+.nf-playlist { display: grid; gap: 8px; max-height: 560px; overflow: auto; padding-right: 2px; }
+@media (max-width: 820px) { .nf-playlist { grid-auto-flow: column; grid-auto-columns: minmax(200px, 62%); max-height: none; overflow-x: auto; padding-bottom: 6px; } }
+.nf-mitem { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: center; padding: 6px; border-radius: var(--cds-radius); border: 1px solid transparent; }
+@media (max-width: 820px) { .nf-mitem { grid-template-columns: 1fr; align-items: start; } }
+.nf-mitem:hover { background: var(--cds-chart-grid); }
+.nf-mitem[aria-current="true"] { border-color: var(--color-border-line); background: color-mix(in srgb, var(--color-fg) 4%, var(--color-panel)); }
+.nf-mitem:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 1px; }
+.nf-mthumb { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; }
+.nf-mthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nf-mthumb .dur { position: absolute; right: 4px; bottom: 4px; font-size: 10.5px; font-weight: 600; color: #fff; background: rgba(0,0,0,.65); padding: 0 5px; border-radius: 3px; font-variant-numeric: tabular-nums; }
+.nf-mthumb .play { position: absolute; inset: 0; display: grid; place-items: center; }
+.nf-mthumb .play::before { content: ""; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.55) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4.5v7l5.5-3.5z' fill='white'/%3E%3C/svg%3E") center / 16px no-repeat; }
+.nf-mtext { display: grid; gap: 2px; min-width: 0; }
+.nf-mtext b { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.nf-mtext span { font-size: 12px; color: var(--color-fg-muted); }
+.nf-h3 { font-family: var(--font-anthropic-serif); font-weight: 600; font-size: 17px; margin: 22px 0 10px; }
+.nf-photogroups { display: grid; gap: 14px; }
+.nf-pgroup { display: grid; gap: 6px; }
+.nf-pgroup .hd { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 13px; }
+.nf-pgroup .hd b { font-weight: 600; }
+.nf-pgroup .hd span { color: var(--color-fg-muted); font-size: 12px; }
+.nf-pgroup .hd button { all: unset; cursor: pointer; font-size: 12px; color: var(--color-fg-muted); text-decoration: underline; }
+.nf-pstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.nf-pthumb { all: unset; cursor: zoom-in; display: block; border-radius: 6px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--cds-chart-grid); }
+.nf-pthumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.nf-pthumb:hover img { transform: scale(1.04); }
+.nf-pthumb:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; }
+.nf-sitemedia { display: grid; gap: 6px; margin: 4px 0 12px; }
+.nf-sitemedia .hd { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--color-fg-muted); }
+.nf-sitemedia .strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.nf-sitemedia .strip > * { flex: none; width: 150px; }
+.nf-pop .nf-sitemedia .strip > * { width: 108px; }
+.nf-lb { border: 0; padding: 0; background: transparent; max-width: min(1100px, 96vw); width: 100%; color: #fff; }
+.nf-lb::backdrop { background: rgba(10,10,10,.82); }
+.nf-lb .box { display: grid; gap: 10px; }
+.nf-lb .stage { position: relative; display: grid; place-items: center; background: #000; border-radius: var(--cds-radius); overflow: hidden; max-height: 78vh; }
+.nf-lb .stage video, .nf-lb .stage img { max-width: 100%; max-height: 78vh; display: block; }
+.nf-lb .stage img.small { width: min(100%, 720px); height: auto; image-rendering: auto; }
+.nf-lb .cap { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 14px; }
+.nf-lb .cap b { font-weight: 600; }
+.nf-lb .cap span { color: #c9c7c0; font-size: 12.5px; }
+.nf-lb .ctl { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 2; }
+.nf-lb .ctl button, .nf-lb .nav { font: 600 18px/1 var(--font-anthropic-sans); width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: grid; place-items: center; }
+.nf-lb .nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; }
+.nf-lb .nav.prev { left: 8px; } .nf-lb .nav.next { right: 8px; }
+.nf-lb button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (max-width: 600px) {
   .nf-card { padding: 16px; }
   .nf-legendbox .nf-legend { padding-left: 0; }
@@ -250,7 +315,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   </header>
 
   <nav class="nf-nav" aria-label="Sections">
-    <a href="#map-card">Map</a><a href="#timeline-card">Year by year</a><a href="#onset-card">Onset</a><a href="#spread-card">Spread</a><a href="#class-card">By sector</a><a href="#site-card">Site detail</a><a href="#table-card">Sites table</a><a href="#screen-card">Screening</a>
+    <a href="#map-card">Map</a><a href="#media-card">Field media</a><a href="#timeline-card">Year by year</a><a href="#onset-card">Onset</a><a href="#spread-card">Spread</a><a href="#class-card">By sector</a><a href="#site-card">Site detail</a><a href="#table-card">Sites table</a><a href="#screen-card">Screening</a>
   </nav>
 
   <section class="nf-tiles" id="tiles">
@@ -268,6 +333,17 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
       <div class="nf-legend" id="legend-groups" data-source="inventory"></div>
     </div>
     <div class="nf-box nf-map dash-skeleton" id="map" data-source="inventory sites site_results countries rivers labels site_table series screening"></div>
+  </section>
+
+  <section class="nf-card" id="media-card">
+    <h2>On the ground and from the air</h2>
+    <div class="note">Drone footage, satellite time-lapses and animations from the fieldwork and the chapters behind the atlas. Each item names the atlas sites it shows; on the map those sites carry a ring.</div>
+    <div class="nf-media">
+      <figure class="nf-player" id="media-player" aria-live="polite"></figure>
+      <div class="nf-playlist" id="media-list" role="list" aria-label="Videos and animations"></div>
+    </div>
+    <h3 class="nf-h3">Drone photos, January 2023</h3>
+    <div class="nf-photogroups" id="media-photos"></div>
   </section>
 
   <section class="nf-card" id="timeline-card">
@@ -324,6 +400,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
     <h2>Site detail</h2>
     <div class="nf-ctl"><label for="site-pick">Site</label><select id="site-pick" data-source="site_results"></select><button type="button" id="site-link" class="nf-btn" style="margin-bottom:0">Copy link to this site</button></div>
     <p class="nf-sitenote" id="site-note"></p>
+    <div class="nf-sitemedia" id="site-media" hidden></div>
     <div class="note">Area in the river outline (low-flow channel plus 100 m) from one clear January scene per dry season. Hollow points are hazy or partial scenes left out of the statistics.</div>
     <div class="nf-legend" id="legend-series"></div>
     <div class="nf-box nf-chart dash-skeleton" id="series" data-source="series"></div>
@@ -485,6 +562,158 @@ dash.calc('summary', {
 </script>
 
 <script>
+/* Field media: videos, time-lapses, animations and drone photos from data/media.json, each linked to the
+   atlas sites it shows. Renders the media section, the per-site strips (site detail and map pop-up) and a
+   lightbox. Videos load only when played (preload="none" with a poster). */
+window.NFMedia = (function () {
+  const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+  const fmtDur = (s) => (s ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '');
+  const data = () => { const m = dash.data('media'); return m.status === 'ok' && m.data && m.data.videos ? m.data : null; };
+  const siteName = (sid) => { const r = dash.data('site_results'); const x = r.status === 'ok' ? r.data.find((q) => q.site === sid) : null; return x ? x.river : ''; };
+  const isVideo = (it) => !!(it.src && /\.mp4$/i.test(it.src) && !it.photo);
+  let rendered = false;
+
+  function sitesWithMedia() {
+    const d = data(), s = new Set();
+    if (d) { d.videos.forEach((v) => v.sites.forEach((x) => s.add(x))); d.photos.forEach((p) => p.sites.forEach((x) => s.add(x))); }
+    return s;
+  }
+  function itemsFor(sid) {
+    const d = data(); if (!d) return [];
+    return d.videos.filter((v) => v.sites.includes(sid)).concat(d.photos.filter((p) => p.sites.includes(sid)).map((p) => ({ ...p, photo: true, credit: d.photo_credit })));
+  }
+  function siteLinks(sites) {
+    const w = el('div', 'nf-sitelinks');
+    sites.forEach((sid) => {
+      const b = el('button'); b.type = 'button'; b.title = `Open ${sid} in the site detail`;
+      b.append(el('b', null, sid), document.createTextNode(siteName(sid) || 'Open site'));
+      b.addEventListener('click', () => { if (lb && lb.open) lb.close(); if (NF.openSite) NF.openSite(sid); });
+      w.append(b);
+    });
+    return w;
+  }
+  function videoNode(item, autoplay) {
+    const v = el('video'); v.controls = true; v.playsInline = true; v.preload = autoplay ? 'auto' : 'none';
+    v.poster = item.poster; v.src = item.src; v.setAttribute('aria-label', item.title);
+    if (item.fit) { v.style.objectFit = 'cover'; v.style.objectPosition = item.fit.position || '50% 50%'; }
+    if (autoplay) v.autoplay = true;
+    return v;
+  }
+  function thumbNode(it) {
+    const th = el('span', 'nf-mthumb'), im = el('img');
+    im.src = it.photo ? it.src : it.poster; im.alt = ''; im.loading = 'lazy'; im.decoding = 'async';
+    if (it.fit) im.style.objectPosition = it.fit.position;
+    th.append(im);
+    if (isVideo(it)) th.append(el('span', 'play'));
+    if (it.duration) th.append(el('span', 'dur', fmtDur(it.duration)));
+    return th;
+  }
+
+  // Featured player in the media section
+  function play(item, autoplay) {
+    const fig = document.getElementById('media-player'); if (!fig) return;
+    fig.querySelectorAll('video').forEach((v) => v.pause());
+    fig.replaceChildren();
+    const stage = el('div', 'stage');
+    if (item.fit) { stage.style.aspectRatio = item.fit.aspect || '1 / 1'; stage.style.width = 'min(100%, 520px)'; stage.style.justifySelf = 'center'; }
+    if (item.image) { const im = el('img'); im.src = item.image; im.alt = item.title; stage.style.aspectRatio = 'auto'; stage.append(im); } else stage.append(videoNode(item, autoplay));
+    const cap = el('figcaption'), meta = el('div', 'nf-mmeta');
+    meta.append(el('span', 'nf-kind', item.kind), el('span', null, item.place), el('span', null, item.date));
+    if (item.duration) meta.append(el('span', null, fmtDur(item.duration)));
+    cap.append(meta, el('h3', null, item.title), el('p', null, item.text));
+    if (item.sites.length) cap.append(siteLinks(item.sites));
+    cap.append(el('div', 'nf-credit', item.credit));
+    fig.append(stage, cap);
+    document.querySelectorAll('#media-list .nf-mitem').forEach((b) => b.setAttribute('aria-current', b.dataset.id === item.id ? 'true' : 'false'));
+  }
+
+  // Lightbox for photos, and for videos opened from a site
+  let lb = null, lbList = [], lbIdx = 0;
+  function ensureLb() {
+    if (lb) return lb;
+    lb = el('dialog', 'nf-lb'); lb.setAttribute('aria-label', 'Media viewer');
+    lb.addEventListener('click', (e) => { if (e.target === lb) lb.close(); });
+    lb.addEventListener('close', () => { lb.querySelectorAll('video').forEach((v) => v.pause()); lb.replaceChildren(); });
+    lb.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { e.preventDefault(); step(1); } if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); } });
+    document.body.append(lb);
+    return lb;
+  }
+  function show(list, i) {
+    ensureLb(); lbList = list; lbIdx = i;
+    const it = list[i];
+    document.querySelectorAll('video').forEach((v) => { if (!lb.contains(v)) v.pause(); });
+    const box = el('div', 'box'), stage = el('div', 'stage');
+    if (isVideo(it)) {
+      const v = videoNode(it, true);
+      if (it.fit) { v.style.width = 'min(78vh, 92vw)'; v.style.height = 'min(78vh, 92vw)'; }
+      stage.append(v);
+    } else { const im = el('img', it.photo ? 'small' : null); im.src = it.image || it.src; im.alt = it.caption || it.title; stage.append(im); }
+    const ctl = el('div', 'ctl'), x = el('button', null, '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', () => lb.close()); ctl.append(x); stage.append(ctl);
+    if (list.length > 1) {
+      const p = el('button', 'nav prev', '‹'), n = el('button', 'nav next', '›');
+      p.type = n.type = 'button'; p.setAttribute('aria-label', 'Previous'); n.setAttribute('aria-label', 'Next');
+      p.addEventListener('click', () => step(-1)); n.addEventListener('click', () => step(1)); stage.append(p, n);
+    }
+    const cap = el('div', 'cap');
+    cap.append(el('b', null, it.caption || it.title), el('span', null, [it.place, it.date].filter(Boolean).join(' · ')), el('span', null, it.credit || ''));
+    if (list.length > 1) cap.append(el('span', null, `${i + 1} of ${list.length}`));
+    box.append(stage, cap);
+    if (!it.photo && it.sites && it.sites.length) box.append(siteLinks(it.sites));
+    lb.replaceChildren(box);
+    if (!lb.open) lb.showModal();
+    x.focus();
+  }
+  function step(dlt) { if (lbList.length > 1) show(lbList, (lbIdx + dlt + lbList.length) % lbList.length); }
+
+  // Strip of thumbnails for one site (site detail and map pop-up)
+  function strip(sid) {
+    const items = itemsFor(sid); if (!items.length) return null;
+    const w = el('div', 'nf-sitemedia'), s = el('div', 'strip');
+    const nv = items.filter(isVideo).length + items.filter((x) => x.image).length, np = items.filter((x) => x.photo).length;
+    w.append(el('div', 'hd', 'Field media: ' + [nv ? `${nv} video${nv > 1 ? 's' : ''}` : '', np ? `${np} photo${np > 1 ? 's' : ''}` : ''].filter(Boolean).join(', ')));
+    items.forEach((it, i) => {
+      const b = el('button', 'nf-pthumb'); b.type = 'button';
+      b.setAttribute('aria-label', it.photo ? `Photo: ${it.caption}` : `${it.kind}: ${it.title}`); b.title = it.caption || it.title;
+      b.append(thumbNode(it)); b.addEventListener('click', () => show(items, i)); s.append(b);
+    });
+    w.append(s);
+    return w;
+  }
+
+  // The media section: playlist, featured player and photo groups
+  function render() {
+    const d = data();
+    if (!d || rendered || dash.data('site_results').status !== 'ok') return;
+    rendered = true;
+    const list = document.getElementById('media-list');
+    d.videos.forEach((v) => {
+      const b = el('button', 'nf-mitem'); b.type = 'button'; b.dataset.id = v.id; b.setAttribute('role', 'listitem');
+      const tx = el('span', 'nf-mtext'); tx.append(el('b', null, v.title), el('span', null, `${v.kind} · ${v.place}`));
+      b.append(thumbNode(v), tx); b.addEventListener('click', () => play(v, true)); list.append(b);
+    });
+    play(d.videos[0], false);
+    const pg = document.getElementById('media-photos');
+    const photos = d.photos.map((p) => ({ ...p, photo: true, credit: d.photo_credit }));
+    d3.groups(photos, (p) => p.place).forEach(([place, ps]) => {
+      const g = el('div', 'nf-pgroup'), hd = el('div', 'hd');
+      hd.append(el('b', null, place), el('span', null, ps[0].date));
+      ps[0].sites.forEach((sid) => { const a = el('button', null, `${sid} ${siteName(sid)}`); a.type = 'button'; a.title = `Open ${sid} in the site detail`; a.addEventListener('click', () => NF.openSite && NF.openSite(sid)); hd.append(a); });
+      const st = el('div', 'nf-pstrip');
+      ps.forEach((p) => {
+        const b = el('button', 'nf-pthumb'); b.type = 'button'; b.setAttribute('aria-label', `${p.caption}, ${place}: enlarge`);
+        const im = el('img'); im.src = p.src; im.alt = p.caption; im.loading = 'lazy'; im.decoding = 'async'; b.append(im);
+        b.addEventListener('click', () => show(photos, photos.indexOf(p))); st.append(b);
+      });
+      g.append(hd, st); pg.append(g);
+    });
+    pg.append(el('div', 'nf-credit', `${d.photo_credit}. Stills taken from the field contact sheets, so they are small; the full-resolution originals are held by the author.`));
+  }
+
+  return { render, strip, sitesWithMedia, show, play };
+})();
+</script>
+
+<script>
 (function () {
   const tip = () => document.querySelector('#map .nf-tip');
   const typeOf = (sid, res) => (res.find((r) => r.site === sid) || {}).type || 'Not yet run';
@@ -492,6 +721,7 @@ dash.calc('summary', {
   // The chosen site is kept in the address as #site=E076, so a site can be shared or bookmarked.
   const setHash = (sid) => { if (location.hash !== '#site=' + sid) history.replaceState(null, '', '#site=' + sid); };
   const openSite = (sid, scroll = true) => { NF.site = sid; drawSeries(); setHash(sid); if (scroll) document.getElementById('site-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  NF.openSite = openSite;
   const hashSite = () => { const m = location.hash.match(/^#site=([A-Za-z]\d+)$/); return m ? m[1].toUpperCase() : null; };
   let deepLink = hashSite();
   if (deepLink) NF.site = deepLink;
@@ -530,6 +760,13 @@ dash.calc('summary', {
       b.addEventListener('click', () => { NF.hiddenTypes.has(ty) ? NF.hiddenTypes.delete(ty) : NF.hiddenTypes.add(ty); draw(); });
       lt.append(b);
     });
+    const nMedia = NFMedia.sitesWithMedia().size;
+    if (nMedia) {
+      const r = document.createElement('a'); r.href = '#media-card'; r.className = 'nf-ringkey';
+      r.addEventListener('click', (ev) => { ev.preventDefault(); document.getElementById('media-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      const sw = document.createElement('span'); sw.className = 'nf-ringsw'; r.append(sw, document.createTextNode(`Field photos or video (${nMedia})`));
+      lt.append(r);
+    }
     if (NF.hiddenTypes.size || NF.hidden.size) {
       const all = document.createElement('button'); all.type = 'button'; all.className = 'nf-showall'; all.textContent = 'Show all';
       all.addEventListener('click', () => { NF.hiddenTypes.clear(); NF.hidden.clear(); draw(); });
@@ -633,6 +870,10 @@ dash.calc('summary', {
     // No-signal sites are drawn smaller, fainter and underneath, so the sites with a change stand out.
     const quiet = (d) => d.type === 'No signal';
     const sym = (d) => d3.symbol(d3.symbolDiamond, quiet(d) ? 70 : 150)();
+    // Sites with field photos or video carry a ring (drawn under the markers).
+    const withMedia = NFMedia.sitesWithMedia();
+    const ring = g.append('g').selectAll('circle').data(anal.filter((d) => withMedia.has(d.site))).join('circle')
+      .attr('r', 12).style('fill', 'none').style('stroke', 'var(--nf-accent)').style('stroke-width', 2.2).style('pointer-events', 'none');
     const mk = g.append('g').selectAll('path').data(anal.slice().sort((a, b) => quiet(b) - quiet(a))).join('path').attr('class', 'nf-mk').attr('d', sym)
       .style('fill', (d) => NF.typeColor[d.type]).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5).style('fill-opacity', (d) => (quiet(d) ? 0.55 : 1)).style('cursor', 'pointer')
       .attr('tabindex', 0).attr('role', 'button').attr('aria-label', (d) => `${d.site}, ${d.type}: open details`);
@@ -658,6 +899,7 @@ dash.calc('summary', {
       row('Sand break', d.sand_break ? `${d.sand_break}: ${fmt(d.sand_before)} → ${fmt(d.sand_after)} ha${fp(d.sand_p)}` : 'n/a');
       row('Sand-to-water break', d.s2w_break ? `${d.s2w_break}: ${fmt(d.s2w_before)} → ${fmt(d.s2w_after)} ha${fp(d.s2w_p)}` : 'n/a');
       const note = document.createElement('p'); note.className = 'txt'; note.textContent = d.note; pop.append(note);
+      const ms = NFMedia.strip(d.site); if (ms) pop.append(ms);
       const chipBox = document.createElement('div'); chipBox.style.display = 'grid'; chipBox.style.gap = 'var(--cds-gap-xs)';
       pop.append(chipBox);
       const fillChips = () => {
@@ -745,6 +987,7 @@ dash.calc('summary', {
       rects.style('stroke-width', (d) => (['Not yet run', 'Skipped'].includes(typeOf(d.site_id, res)) ? 1 : 2.5) / zoomT.k);
       g.selectAll('.nf-line').style('stroke-width', function () { return (+this.getAttribute('data-w')) / Math.sqrt(zoomT.k); });
       mk.attr('transform', (d) => `translate(${X(d.slon)},${Y(d.slat)}) scale(${1 / Math.sqrt(zoomT.k)})`);
+      ring.attr('transform', (d) => `translate(${X(d.slon)},${Y(d.slat)}) scale(${1 / Math.sqrt(zoomT.k)})`);
       mkl.style('display', zoomT.k >= 3 ? null : 'none');
       labs.selectAll('text').attr('x', function () { return zoomT.applyX(X(+this.getAttribute('data-lon'))); })
         .attr('y', function () { return zoomT.applyY(Y(+this.getAttribute('data-lat'))); })
@@ -1011,6 +1254,8 @@ dash.calc('summary', {
         const p = document.createElement('span'); p.className = 'nf-pill'; p.style.color = NF.typeColor[info.type]; p.textContent = info.type;
         note.append(p, document.createTextNode(` ${info.visual_onset ? 'Onset ' + info.visual_onset + '. ' : ''}${info.note}`));
       }
+      const sm = document.getElementById('site-media'), ms = NFMedia.strip(NF.site);
+      sm.replaceChildren(...(ms ? [ms] : [])); sm.hidden = !ms;
     }
     if (d.status !== 'ok') return;
     box.classList.remove('dash-skeleton');
@@ -1205,6 +1450,7 @@ dash.calc('summary', {
     }
     const sr = dash.data('site_results');
     if (deepLink && sr.status === 'ok' && !sr.data.some((x) => x.site === deepLink)) { deepLink = null; NF.site = 'E076'; history.replaceState(null, '', location.pathname + location.search); }
+    try { NFMedia.render(); } catch (e) { console.error(e); }
     draw(); drawTimeline(); drawOnset(); drawSpread(); drawClasses(); drawSectors(); drawSeries(); drawTable(); drawScreen();
     if (deepLink && dash.ready()) { deepLink = null; requestAnimationFrame(() => document.getElementById('site-card').scrollIntoView({ block: 'start' })); }
   });
