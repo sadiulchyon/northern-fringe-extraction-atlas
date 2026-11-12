@@ -12,6 +12,7 @@ This repository holds the data, code and interactive atlas behind Chapter 4 of t
 - **Year slider:** sites light up from the first January in which their low-flow series shows an extraction-type change; a strip chart counts changed sites by sector.
 - **Onset by position** along the border, with dated laws, bans and dredging works.
 - **Spread:** first year of change against longitude, with sector medians.
+- **Field media:** drone footage, satellite time-lapses and animations from the fieldwork and the chapters behind the atlas, and drone photos from January 2023, each linked to the sites it shows (ringed on the map, and listed in the site pop-up and site detail).
 - **Site detail:** water, sand and vegetation area inside each river outline, 1988 to 2025.
 - **Tables** of all analysed sites and of the screening.
 
@@ -50,6 +51,7 @@ Of 77 dated extraction-type sites, 5 change before 2000, 40 in 2000 to 2009, 26 
 | Path | Contents |
 |---|---|
 | `docs/` | The atlas (GitHub Pages): `index.html`, `data/` (CSV and JSON it reads), `vendor/d3.min.js` |
+| `docs/media/` | Field media shown in the atlas (web copies: videos re-encoded at about 570 × 320, drone stills cut from the field contact sheets); `docs/data/media.json` lists each item with its sites, date and credit |
 | `gee/ch4_09_lowflow_runsites.js` | Earth Engine helpers that pick the January scenes and download each site as `SITE_scenes_v2.bin` |
 | `gee/corridor_rf_superseded/` | Earlier corridor-wide random-forest pipeline (scripts 01 to 08), set aside because it recorded bare ground rather than extraction |
 | `scripts/` | Python and shell pipeline (below) |
@@ -80,7 +82,7 @@ To view the atlas locally: `python3 -m http.server --directory docs` and open ht
 
 ## Data sources
 
-Landsat Collection 2 Level 2 (U.S. Geological Survey); JRC Global Surface Water (Pekel et al., 2016, Nature 540, 418–422); HydroRIVERS v1.0 (Lehner and Grill, 2013); Natural Earth 1:10m boundaries; inventory points mapped on Google Earth historical imagery. Governance dates in `maps/dash/events.csv` carry their source links. d3 v7 (ISC licence) is bundled in `docs/vendor/`.
+Landsat Collection 2 Level 2 (U.S. Geological Survey); JRC Global Surface Water (Pekel et al., 2016, Nature 540, 418–422); HydroRIVERS v1.0 (Lehner and Grill, 2013); Natural Earth 1:10m boundaries; inventory points mapped on Google Earth historical imagery. Governance dates in `maps/dash/events.csv` carry their source links. d3 v7 (ISC licence) is bundled in `docs/vendor/`. Field media: drone footage and photos by the author (fieldwork 2023 and 2024); RapidEye, PlanetScope and SkySat time-lapses of the Lubha, imagery © Planet Labs PBC; the Someshwari video abstract accompanies a manuscript in review at Water Resources Research.
 
 ## Citation and reuse
 
